@@ -13,7 +13,7 @@ setfacl [옵션] [설정내용] [파일/디렉터리명]
 * **`-m`** (modify)**:** 권한을 추가하거나 수정 (가장 많이 사용)
 * **`-x`** (remove)**:** 특정 사용자나 그룹의 접근 권한 삭제
 * **`-b`** (remove all)**:** 설정된 모든 접근 권한을 제거&#x20;
-* **`-R`** (recursive)**:** 하위 디렉터리와 파일까지 재귀적으 적용
+* **`-R`** (recursive)**:** 하위 디렉터리와 파일까지 재귀적으로 적용&#x20;
 
 설정내용
 
@@ -35,7 +35,7 @@ setfacl [옵션] [설정내용] [파일/디렉터리명]
 setfacl -m u:user01:rw test.txt​
 
 # user02에게 project 디렉터리의 읽기, 쓰기, 실행 권한을 하위까지 모두 부여
-setfacl -R -m u:user02:rwx project/
+setfacl -R -m u:user02:rwx project/ 
 ```
 
 getfacl 명령어를 사용해 부여된 권한을 확인할 수 있습니다.
