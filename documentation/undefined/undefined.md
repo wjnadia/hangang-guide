@@ -8,10 +8,17 @@
 setfacl [옵션] [설정내용] [파일/디렉터리명]
 ```
 
-* **`-m` (modify):** 권한을 추가하거나 수정 (가장 많이 사용)
-* **`-x` (remove):** 특정 사용자나 그룹의 접근 권한 삭제
-* **`-b` (remove all):** 설정된 모든 접근 권한을 제거&#x20;
-* **`-R` (recursive):** 하위 디렉터리와 파일까지 재귀 적용
+옵션
+
+* **`-m`** (modify)**:** 권한을 추가하거나 수정 (가장 많이 사용)
+* **`-x`** (remove)**:** 특정 사용자나 그룹의 접근 권한 삭제
+* **`-b`** (remove all)**:** 설정된 모든 접근 권한을 제거&#x20;
+* **`-R`** (recursive)**:** 하위 디렉터리와 파일까지 재귀적으 적용
+
+설정내용
+
+* **사용자** u:\[사용자명]:\[권한]
+* **그룹**       g:\[그룹명]:\[권한]
 
 
 
@@ -20,7 +27,7 @@ setfacl [옵션] [설정내용] [파일/디렉터리명]
 #### &#x20; **가. 특정 사용자(USER)에게 권한 부여**
 
 ```
-형식: u:[사용자명]:[권한]
+형식: u:[사용자명]:[권한]            # 권한: r(읽기)w(쓰기)x(실행)
 ```
 
 ```
@@ -40,7 +47,7 @@ getfacl test.txt
 #### &#x20; **나. 특정 그룹에게 권한 부여**
 
 ```
-형식: g:[그룹명]:[권한]
+형식: g:[그룹명]:[권한]              # 권한: r(읽기)w(쓰기)x(실행)
 ```
 
 ```
@@ -53,17 +60,17 @@ setfacl -m g:team01:rx sample.sh
 ```
 1. user01 계정으로 로그인
 2. cd /scratch
-3. setfacl -m u:user02:rx user01 #rwx로 설정하면 읽기/쓰기/실행
+3. setfacl -m u:user02:rx user01    # rwx로 설정하면 읽기/쓰기/실행
 ```
 
 #### &#x20; **라. user01 사용자가 /scratch/user01/shared 디렉토리를 user02사용자에게 권한 부여**
 
 ```
 1. user01 계정으로 로그인
-2. cd /scratch # /scratch 경로로 이동
-3. setfacl -m u:user02:x user01 # 하위 shared디렉토리 이외는 접근하지 못하도록 상위디렉토리에 x만 부여
-4. cd user01 # 현재경로: /scratch/user01
-5. setfacl -m u:user02:rwx shared # user02에게 shared 디렉토리에 읽기/쓰기/실행 권한 부여
+2. cd /scratch                      # /scratch 경로로 이동
+3. setfacl -m u:user02:x user01     # 하위 shared디렉토리 이외는 접근하지 못하도록 상위디렉토리에 x만 부여
+4. cd user01                        # 현재경로: /scratch/user01
+5. setfacl -m u:user02:rwx shared   # user02에게 shared 디렉토리에 읽기/쓰기/실행 권한 부여
 ```
 
 
