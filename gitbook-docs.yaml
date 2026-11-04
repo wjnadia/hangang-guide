@@ -1,0 +1,20 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+site:
+  title: 한강 지침서
+  structure:
+    - type: section
+      key: section-1
+      title: 한강 지침서
+      path: documentation
+      description: KISTI 슈퍼컴퓨터 6호기 한강 시스템 사용자 지침서
+      icon: water
+      default: true
+      children:
+        - type: space
+          key: space-1
+          title: 한강 지침서
+          path: documentation
+          default: true
+          content:
+            directory: ./documentation
+            language: ko
