@@ -190,8 +190,8 @@ cmake/4.4.3                    grads/2.2.1(default)           ncview/2.1.11(defa
   * **사용 가능 사용자 그룹이 아니거나 사용 신청을 하지 않은 타 기관 사용자에 의한 ANSYS 사용은 ANSYS 사에 의해 법적 제재를 당할 수 있음에 유의 바랍니다.**
 * Abaqus 사용이 가능한 사용자 그룹은 대학교, 산업체(중소기업), 출연연구소에 한정합니다.
   * **사용 가능 사용자 그룹이 아니거나 사용 신청을 하지 않은 타 기관 사용자에 의한 Abaqus 사용은 다쏘시스템코리아에 의해 법적 제재를 당할 수 있음에 유의 바랍니다.**
-* Gaussian은 helpdesk 계정담당자(account@ksc.re.kr)를 통해 사용권한 신청 후 사용 가능합니다.
-  * GaussView는 [**MyKSC**](https://portal.my-6th.ksc.re.kr/) 웹 포털의 [**VNC 앱**](https://app.gitbook.com/s/jtnnlutdgkoEEgUQdY8k/myksc/undefined-1/undefined-1/vnc-linux)에서 사용할 수 있습니다.&#x20;
+* Gaussian은 helpdesk 계정담당자(account@ksc.re.kr)를 통해 사용 권한 신청 후 사용 가능합니다.
+  * **GaussView**는 [**MyKSC**](https://portal.my-6th.ksc.re.kr/) 웹 포털의 [**VNC 앱**](https://app.gitbook.com/s/jtnnlutdgkoEEgUQdY8k/myksc/undefined-1/undefined-1/vnc-linux)에서 사용할 수 있습니다.&#x20;
 * MATLAB은 **사용자(소속기관)가 라이선스를 보유해야 합니다**. 사용법은 [**MATLAB via VNC**](https://app.gitbook.com/s/jtnnlutdgkoEEgUQdY8k/myksc/undefined-1/undefined-1/matlab-via-vnc) 참고 바랍니다.
 
 ## 나. 컴파일러 사용법 <a href="#id-1" id="id-1"></a>
