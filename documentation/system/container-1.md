@@ -31,9 +31,174 @@ layout:
 
 사용자는 자신의 작업 단계(빌드, 실행)에 맞춰 적절한 도구를 선택하여 사용할 수 있습니다.
 
-**Podman**은 OCI 이미지를 빌드하고 관리하는 도구이고, 계산  작업을 실행하기 위해서는 **Singularity/Apptainer, Enroot/Pyxis**와 같은 컨테이너 런타임을 선택적으로 사용할 수 있습니다.
+**Podman**은 OCI 이미지를 빌드하고 관리하는 도구이고, 계산  작업을 실행하기 위해서는 **Enroot 또는 Apptainer** 와 같은 컨테이너 런타임을 선택적으로 사용할 수 있습니다.
 
 또한, 병렬 연산 및 분산  학습 작업에서 고성능 네트워크(Slingshot) 기반의 MPI 및 NCCL 환경 구성을 지원하는 컨테이너 런타임 Wrapper 프로그램(**kisti-container**)을 제공하고 있습니다.   &#x20;
+
+
+
+## 나. 빠른 따라해 보기
+
+### 1. 제공 이미지로 바로 실행하기
+
+Slurm 스케줄러를 통해 할당된 GPU 계산 노드에서 **Enroot 컨테이너**를 구동하여 **GPU Smoke 프로그램**을 실행하는 예제입니다. Enroot 명령어 없이 컨테이너 이미지 경로 등을 slurm 스케줄러의 파라미터로 설정하여 컨테이너를 구동하는 **Pyxis 플러그인**을 사용합니다.&#x20;
+
+#### **1) 예제 복사하기**
+
+```bash
+## 02-gpu-smoke 예제 디렉터리 복사하기
+$ mkdir -p /scratch/$USER/kisti-container/examples
+$ cp -a /apps/common/kisti-container/examples/02-gpu-smoke \
+  /scratch/$USER/kisti-container/examples/
+
+## NGC Pytorch 이미지 파일(.sqsh) 복사하기
+$ mkdir -p /scratch/$USER/kisti-container/images
+cp -a /apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh \
+  /scratch/$USER/kisti-container/images/
+```
+
+#### **2) 예제 실행하기**
+
+<pre class="language-bash"><code class="lang-bash"><strong>## 배치 작업 제출하기(GH200 GPU 계산노드 1대 할당) 
+</strong><strong>$ cd /scratch/$USER/kisti-container/examples/02-gpu-smoke
+</strong><strong>$ sbatch run-pyxis.sbatch
+</strong>Submitted batch job 1234567
+
+## 작업결과 확인하기
+$ cat gpu-pyxis-1234567.out
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.011594
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.006231
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.022566
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.048418
+</code></pre>
+
+{% code title="예제 작업 스크립트 파일" %}
+```bash
+## /scratch/$USER/kisti-container/examples/02-gpu-smoke/run-pyxis.sbatch
+
+#!/bin/bash
+#SBATCH --job-name=gpu-pyxis
+#SBATCH --partition=normal
+#SBATCH --comment="field=misc;appl=pytorch"
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=4
+#SBATCH --gpus-per-node=4
+#SBATCH --exclusive
+#SBATCH --time=00:05:00
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
+
+ROOT=/scratch/$USER/kisti-container
+IMAGE=$ROOT/images/pytorch-25.03-py3-aarch64.sqsh
+PROGRAM=$ROOT/examples/02-gpu-smoke/gpu_smoke.py
+
+module purge
+module load enroot/4.2.0
+
+# --container-image 파라미터를 사용하여 Enroot 컨테이너 이미지를 설정함(Pyxis slurm 플러그인 사용)
+srun \
+  --mpi=none \
+  --container-image="$IMAGE" \
+  python3 "$PROGRAM"
+```
+{% endcode %}
+
+
+
+#### **2. 사용자 이미지 빌드 후 실행하기**
+
+아래 예제는 먼저 Podman을 사용하여 Pytorch NGC 이미지를 베이스로 deepspeed가 포함된 사용자 이미지를 빌드하고 Enroot 이미지 파일로 변환합니다. kisti-container(컨테이너 Wrapper, Slingshot 고속 네트워크 기반 NCCL 환경 구성)을 사용하여 Deepspeed 기반 멀티 노드 분산 훈련 프로그램을 실행합니다.&#x20;
+
+#### **1) 예제 복사하기**
+
+```bash
+## 07-pytorch-deepspeed 예제 디렉터리 복사하기
+$ mkdir -p /scratch/$USER/kisti-container/examples
+$ cp -a /apps/common/kisti-container/examples/07-pytorch-deepspeed \
+  /scratch/$USER/kisti-container/examples/
+```
+
+#### **2) 사용자 이미지 빌드하기**
+
+```bash
+## Podman 사용 설정
+$ cd ~                # 사용자홈 디렉터리(/home01/[ID])로 이동             
+$ touch .usepodman    
+$ ls -la .usepodman
+-rw-r--r-- 1 test test 0  3월  3 11:19 .usepodman
+$ exit                # 로그아웃 후 다시 로그인
+
+## 현재 디렉터리(.)의 Dockerille.pytorch_deepspeed로 'pytorch:deepspeed-aarch64' 이미지 빌드
+$ podman build -t pytorch:deepspeed-aarch64 -f Dockerille.pytorch_deepspeed .
+$ podman images
+REPOSITORY                                 TAG                     IMAGE ID      CREATED        SIZE
+localhost/pytorch:deepspeed-aarch64        deepspeed-aarch64       5e7a4783117b  21 minutes ago 22.1 GB
+
+# Enroot 이미지 파일(.sqsh) 생성(read-only, 계산 노드에서 작업 실행에 적합)
+$ cd /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed
+$ module load enroot/4.2.0
+$ enroot import -o pytorch-deepspeed-aarch64.sqsh podman://localhost/pytorch:deepspeed-aarch64
+$ ls pytorch-deepspeed-aarch64.sqsh
+```
+
+{% code title="예제 Dockerfile" %}
+```bash
+## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/Dockerfile.pytorch_deepspeed
+
+FROM nvcr.io/nvidia/pytorch:25.03-py3
+RUN umask 022
+RUN pip install --no-cache-dir deepspeed==0.18.9
+RUN chmod -R a+rX /usr/local /opt
+```
+{% endcode %}
+
+
+
+#### **3) 예제 실행하기**
+
+<pre class="language-bash"><code class="lang-bash"><strong>## 배치 작업 제출하기(GH200 GPU 계산노드 2대 할당) 
+</strong><strong>$ cd /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed
+</strong><strong>$ sbatch kc-run-pyxis.sbatch
+</strong>Submitted batch job 1234567
+
+## 작업결과 확인하기
+$ cat gpu-pyxis-1234567.out
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.011594
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.006231
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.022566
+GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.048418
+</code></pre>
+
+{% code title="예제 작업 스크립트 파일" %}
+```bash
+## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/kc-run-pyxis.sbatch
+
+#!/bin/bash
+#SBATCH --job-name=gpu-pyxis
+#SBATCH --partition=normal
+#SBATCH --comment="field=misc;appl=pytorch"
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node=4
+#SBATCH --gpus-per-node=4
+#SBATCH --exclusive
+#SBATCH --time=00:05:00
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
+
+ROOT=/scratch/$USER/kisti-container
+IMAGE=$ROOT/images/pytorch-25.03-py3-aarch64.sqsh
+PROGRAM=$ROOT/examples/02-gpu-smoke/gpu_smoke.py
+
+module purge
+module load enroot/4.2.0
+
+# --container-image 파라미터를 사용하여 Enroot 컨테이너 이미지를 설정함(Pyxis slurm 플러그인 사용)
+srun \
+  --mpi=none \
+  --container-image="$IMAGE" \
+  python3 "$PROGRAM"
+```
+{% endcode %}
 
 
 
@@ -536,7 +701,7 @@ $ podman run --rm --device nvidia.com/gpu=0 \
 
 ### 3. kisti-container&#x20;
 
-kisti-container는 **컨테이너 런타임**을 감싸는 **실행 래퍼**입니다. **MPI**나 **분산 학습 작업**을 컨테이너에서 실행할 때 필요한 설정\*을 자동으로 처리합니다. **Singularity/Apptainer, Enroot(Pyxis)**&#xB97C; 모두 지원하며, 노드의 CPU 아키텍처와 로드된 모듈을 보고 **필요한 설정**을 **자동**으로 **선택**합니다.
+kisti-container는 컨테이너 런타임을 감싸는 실행 래퍼로 **Slingshot을 지원하지 않는 이미지를 실행할 때 사용**할 수 있습니다. **MPI**나 **분산 학습 작업**을 컨테이너에서 실행할 때 필요한 설정\*을 자동으로 처리합니다. Singularity/Apptainer, Enroot(Pyxis)를 모두 지원하며, 노드의 CPU 아키텍처와 로드된 모듈을 보고 필요한 설정을 자동으로 선택합니다.
 
 \***Slingshot** 네트워크 라이브러리 연결, **NCCL** 통신 플러그인 지정, **분산 환경변수** 지정
 
@@ -715,7 +880,7 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 
 
 
-## 사. 스케줄러(SLURM)를 통한 작업 실행
+## 사. 스케줄러(SLURM)를 통한 작업 실행 예제
 
 **컨테이너  런타임** 또는 **kisti-container**를 함께 사용하는 Slurm 작업  스크립트를 작성 및 제출하여 계산노드에서 사용자 작업을 실행할 수 있습니다. 아래와 같이 관심 있는 작업 유형의 **예제 디렉터리**와 예제 실행에 필요한 **이미지 파일**을 사용자 작업 공간으로 복사하여 실행해 볼 수 있습니다.
 
@@ -760,8 +925,6 @@ AI 관련 참고 자료는 **한강 지침서 > 소프트웨어**에서 아래 �
 * [**Pytorch**](https://docs-ksc.gitbook.io/hangang-user-guide/software/pytorch)
 * [**NCCL 활용 및 Slingshot 연동**](https://docs-ksc.gitbook.io/hangang-user-guide/software/nccl-slingshot)&#x20;
 {% endhint %}
-
-
 
 ### **1.  kisti-container MPI 작업**
 
