@@ -20,6 +20,9 @@
   * [ROMS](software/roms.md)
   * [OpenFOAM](software/openfoam.md)
   * [VASP](software/vasp.md)
+  * [AI 코딩 도구 활용 안내](software/ai-1/README.md)
+    * [Claude Code](software/ai-1/claude-code.md)
+    * [Codex](software/ai-1/codex.md)
 
 ## 부록
 
