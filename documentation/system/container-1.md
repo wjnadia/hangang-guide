@@ -54,7 +54,7 @@ Enroot/Pyxis와 Singularity/Apptainer는 실행 측면에서 같은 일을 하�
 {% hint style="info" %}
 * **Podman** : 일반 사용자 권한 기반의 이미지 빌드 및 관리 도구입니다. **Docker**를 **대체**하여 **이미지**를 **생성**할 때 사용합니다.
 * **Enroot / Pyxis** : NVIDIA에서 개발한 HPC 전용 런타임으로 .sqsh 이미지를 실행합니다. NVIDIA GPU에 최적화되어 있으며, **Pyxis**는 Enroot를 **Slurm**에서 바로 실행할 수 있게 해주는 **스케줄러** **플러그인**입니다.
-* **Singularity / Apptainer** : HPC 환경에 최적화된 컨테이너 도구로 .sif 이미지를 실행합니다. **Apptainer**는 Singularity에서 분리되어 발전한 **오픈소스** **컨테이너 런타임**으로, 대부분의 이미지 형식과 사용 방식이 호환됩니다.
+* **Singularity / Apptainer** : HPC 환경에 최적화된 컨테이너 도구로 .sif 이미지를 실행합니다. **Apptainer**는 Singularity에서 분리되어 발전한 **오픈소스** **컨테이너 런타임**으로, 대부분의 이미지 형식과 사용 방식이 singularity와호환됩니다.
 * **kisti-container** : 컨테이너 런타임을 감싸는 실행 **Wrapper 프로그램**입니다. MPI나 분산 학습 작업에 필요한 **Slingshot 통신 설정**을 **자동**으로 **구성**합니다.
 {% endhint %}
 
@@ -65,7 +65,7 @@ Enroot/Pyxis와 Singularity/Apptainer는 실행 측면에서 같은 일을 하�
 작업을 실행 할 계산노드의 아키텍처에 따라 CPU 또는 GPU 로그인 노드에서 **Podman**을 사용하여 컨테이너 이미지를 빌드합니다.&#x20;
 
 {% hint style="info" %}
-Singularity 컨테이너 이미지를 직접 빌드 하기 위해서는 뉴론 컨테이너 활용 가이드의  [**가. 컨테이너 이미지 빌드하기**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container#id) 를 참조하시기 바랍니다.&#x20;
+**Singularity 컨테이너 이미지**를 직접 빌드 하기 위해서는 뉴론 컨테이너 활용 가이드의  [**가. 컨테이너 이미지 빌드하기**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container#id) 를 참조하시기 바랍니다.&#x20;
 {% endhint %}
 
 ### 1. Podman 사용 설정
@@ -85,13 +85,29 @@ $ exit                # 로그아웃 후 다시 로그인
 사용자 소스 코드나 특정 라이브러리를 포함한 커스텀 이미지를 생성합니다.
 
 ```bash
-# 현재 디렉터리(.)의 Dockerfile.pytorch로 'pytorch:deepspeed-aarch64' 이미지 빌드
+## 현재 디렉터리(.)의 Dockerfile.pytorch로 'pytorch:deepspeed-aarch64' 이미지 빌드
 $ podman build -t pytorch:deepspeed-aarch64 -f Dockerfile.pytorch .
 $ podman images
 REPOSITORY                       TAG                IMAGE ID      CREATED         SIZE
 localhost/pytorch                deepspeed-aarch64  5e7a4783117b  21 minutes ago  22.1 GB
 $ podman image inspect localhost/pytorch:deepspeed-aarch64 --format 'image={{.RepoTags}} arch={{.Architecture}} os={{.Os}}'
 image=[localhost/pytorch:deepspeed-aarch64] arch=arm64 os=linux
+
+## NGC 이미지 가져오기
+$ podman pull nvcr.io/nvidia/pytorch:25.03-py3
+Trying to pull nvcr.io/nvidia/pytorch:25.03-py3...
+Getting image source signatures
+Copying blob 69fbe38eb239 done   |
+Copying blob 5b17151e9710 done   |
+Copying blob 58f537c310dd done   |
+--[중략]--
+Copying config b9d9faba96 done   |
+Writing manifest to image destination
+b9d9faba9659ded5e9c72b694879edb79ef4a6e8786d367a2c22f83837536253
+$ podman images
+REPOSITORY                                 TAG                     IMAGE ID      CREATED        SIZE
+localhost/pytorch:deepspeed-aarch64        deepspeed-aarch64       5e7a4783117b  21 minutes ago 22.1 GB
+nvcr.io/nvidia/pytorch                     25.03-py3               b9d9faba9659  19 months ago  22 GB
 ```
 
 {% code title="[ Dockerfile 예시 : Dockerfile.pytorch ]" %}
@@ -124,9 +140,9 @@ CMD ["python3", "--version"]
 **다중 노드 분산 학습**에서는 노드 간 통신 성능이 전체 성능을 좌우합니다. **Slingshot 고속 네트워크**를 **지원**하는 아래 **KISTI 제공  베이스 이미지**를 그대로 사용하거나, 이를 기반으로 사용자 이미지를 빌드 하시기 바랍니다.&#x20;
 
 \
-(Pytorch : deepspeed 포함) myhub.ksc.re.kr/kisti-container/kisti-pytorch:25.03-gh200-r1-aarch64
+**(Pytorch : deepspeed 포함)** myhub.ksc.re.kr/kisti-container/kisti-pytorch:25.03-gh200-r1-aarch64
 
-(NeMo) myhub.ksc.re.kr/kisti-container/kisti-nemo:25.04-gh200-r1-aarch64
+**(NeMo)** myhub.ksc.re.kr/kisti-container/kisti-nemo:25.04-gh200-r1-aarch64
 
 
 
@@ -141,7 +157,7 @@ module load aws-ofi-nccl/1.20.0
 module load libfabric/2.3.1
 ```
 
-어느 쪽이든 실행 후 다음으로 확인하시기 바랍니다.
+실행 후 다음으로 확인하시기 바랍니다.
 
 bash
 
@@ -168,42 +184,21 @@ $
 $ echo $SHELL 
 /bin/bash 
 
-# bash/zsh/ksh 쉘 사용자는 podman-init.sh 스크립트실행
+# bash/zsh/ksh 쉘 사용자는 podman-init.sh 스크립트 실행
 $ source /apps/common/podman/podman-init.sh  
 
-# csh/tcsh 쉘 사용자는 podman-init.csh 스크립트실행
-$ source /apps/common/podman/podman-init.csh ## tcsh/csh 쉘 사용자
+# csh/tcsh 쉘 사용자는 podman-init.csh 스크립트 실행
+$ source /apps/common/podman/podman-init.csh 
 
 $ podman build -t pytorch:deepspeed-aarch64 -f Dockerfile.pytorch .
 $ podman images
 ```
 {% endhint %}
 
-
-
-{% code title="레지스트리에서 직접 가져오는 예시:" %}
-```bash
-$ podman pull nvcr.io/nvidia/pytorch:25.03-py3
-Trying to pull nvcr.io/nvidia/pytorch:25.03-py3...
-Getting image source signatures
-Copying blob 69fbe38eb239 done   |
-Copying blob 5b17151e9710 done   |
-Copying blob 58f537c310dd done   |
---[중략]--
-Copying config b9d9faba96 done   |
-Writing manifest to image destination
-b9d9faba9659ded5e9c72b694879edb79ef4a6e8786d367a2c22f83837536253
-
-$ podman images
-REPOSITORY                                 TAG                     IMAGE ID      CREATED        SIZE
-nvcr.io/nvidia/pytorch                     25.03-py3               b9d9faba9659  19 months ago  22 GB
-```
-{% endcode %}
-
-
-
 {% hint style="info" %}
-**이미지 빌드 명령어**
+**참고 자료**
+
+**1) 이미지 빌드 및 관리 명령어 요약**
 
 ```
 $ podman build [옵션] -t [이미지명]:[태그] [Dockerfile경로]
@@ -215,18 +210,10 @@ $ podman build [옵션] -t [이미지명]:[태그] [Dockerfile경로]
 # 현재 디렉터리의 Dockerfile을 사용하여 빌드하기
 $ podman build -t my_pytorch:deepspeed-aarch64 .
 ```
-{% endhint %}
-
-
-
-{% hint style="info" %}
-**이미지 관리 명령어 요약**
-{% endhint %}
 
 <table data-header-hidden><thead><tr><th width="111.66668701171875" align="center"></th><th width="235.60009765625"></th><th></th></tr></thead><tbody><tr><td align="center"><strong>기능</strong></td><td><strong>명령어</strong></td><td><strong>설명</strong></td></tr><tr><td align="center"><strong>목록 확인</strong></td><td><sub>$ podman images</sub></td><td>로컬에 저장된 이미지 리스트 출력</td></tr><tr><td align="center"><strong>이미지 삭제</strong></td><td><sub>$ podman rmi [이미지ID]</sub></td><td>불필요한 이미지 제거</td></tr><tr><td align="center"><strong>상세 정보</strong></td><td><sub>$ podman inspect [이미지ID]</sub></td><td>이미지 레이어, 환경변수 등 상세 정보 확인</td></tr><tr><td align="center"><strong>태그 변경</strong></td><td><sub>$ podman tag [기존이름] [새이름]</sub></td><td>이미지에 새로운 이름/태그 부여</td></tr></tbody></table>
 
-{% hint style="info" %}
-**Podman 참고 자료**
+**2) 관련 메뉴얼**
 
 * [**Podman 사용법**](https://docs.podman.io/en/latest/Introduction.html)
 * [**Dockerfile instructions**](https://docs.docker.com/build/building/best-practices#dockerfile-instructions)
@@ -251,6 +238,8 @@ $ podman login docker.io
 
 #### **2) myhub**
 
+myhub 를 사용하기 위해서는  [**https://myhub.ksc.re.kr**](https://myhub.ksc.re.kr/)에 슈퍼컴퓨터 계정으로 로그인하여 **사용자 프로젝트**를 생성하고  **CLI 시크릿**을  복사해 와야 합니다. 자세한 사용 방법은 [**myhub 사용법**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-12-how-to-use-containers#myhub)을 참조하시기 바랍니다.&#x20;
+
 {% code expandable="true" %}
 ```
 $ podman login myhub.ksc.re.kr
@@ -258,11 +247,19 @@ $ podman login myhub.ksc.re.kr
 ```
 {% endcode %}
 
-{% hint style="warning" %}
-myhub 를 사용하기 위해서는  [**https://myhub.ksc.re.kr**](https://myhub.ksc.re.kr/)에 슈퍼컴퓨터 계정으로 로그인하여 **사용자 프로젝트**를 생성하고  **CLI secret**을  복사해 와야 합니다.&#x20;
+{% tabs %}
+{% tab title="사용자 프로젝트 생성 및 CLI 시크릿 복사하기" %}
+1\) [**myhub**](https://myhub.ksc.re.kr/)에 로그인하여 **새 프로젝트**를 생성하고 액세스 레벨(공개/비공개)을 설정합니다.&#x20;
 
-<i class="fa-linktree">:linktree:</i> 자세한 사용 방법은 [**myhub 사용법**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-12-how-to-use-containers#myhub)을 참조하시기 바랍니다.&#x20;
-{% endhint %}
+<div data-with-frame="true"><figure><img src="../.gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure></div>
+
+2\) myhub 대시 보드 상단 오른편의 사용자 ID를 클릭하여 사용자 프로필 메뉴를 선택하고, **CLI 시크릿**을 **복사**합니다.&#x20;
+
+<div data-with-frame="true"><figure><img src="../.gitbook/assets/image (15).png" alt="" width="375"><figcaption></figcaption></figure></div>
+{% endtab %}
+{% endtabs %}
+
+
 
 ### 2. 이미지 태그(Tag) 설정
 
@@ -277,10 +274,14 @@ $ podman tag localhost/pytorch:deepspeed-aarch64 docker.io/[Username]/pytorch:de
 
 #### **2) myhub**
 
+**\[프로젝트명]**&#xC740; myhub에 로그인하여 생성한 **사용자 프로젝트**를 지정해야 합니다.&#x20;
+
 ```
 # 로컬 이미지(pytorch:deepspeed-aarch64)를 myhub 형식으로 태그
 $ podman tag localhost/pytorch:deepspeed-aarch64 myhub.ksc.re.kr/[프로젝트명]/pytorch:deepspeed-aarch64
 ```
+
+
 
 ### 3. 이미지 업로드(Push)
 
@@ -325,13 +326,13 @@ $ enroot import -o pytorch-deepspeed-aarch64.sqsh docker://myhub.ksc.re.kr/[프�
 $ enroot create -n pytorch-deepspeed-aarch64 pytorch-deepspeed-aarch64.sqsh
 </code></pre>
 
-
-
 {% hint style="info" %}
 **Enroot 이미지 관련 명령어**&#x20;
-{% endhint %}
 
 <table data-header-hidden><thead><tr><th width="86.020263671875" align="center"></th><th width="140.97393798828125" align="center"></th><th></th></tr></thead><tbody><tr><td align="center"><strong>단계</strong></td><td align="center"><strong>작업 내용</strong></td><td><strong>명령어 / 설정 예시</strong></td></tr><tr><td align="center"><strong>이미지 가져오기</strong></td><td align="center"><sub>Docker Hub 및 myhub 등</sub>  <br><sub>외부 레지스트리에서 직접 가져오기</sub></td><td><p><sub>$ enroot import -o my_pytorch-v1.sqsh docker://[Username]/my_pytorch:v1</sub></p><p></p><p><sub>$ enroot import -o my_pytorch-v1.sqsh docker://myhub.ksc.re.kr/[프로젝트명]/ubuntu:latest</sub></p></td></tr><tr><td align="center"><strong>컨테이너 생성</strong></td><td align="center"><sub>rootfs</sub><br><sub>(unpacked</sub> <br><sub>디렉터리)</sub> <br><sub>생성하기</sub></td><td><p><sub>$ enroot create -n my_pytorch-v1</sub><sup><sub>*</sub></sup><sub> my_pytorch-v1.sqsh</sub>     </p><p><sup><sub>*</sub></sup><sub> 컨테이너(rootfs)는 enroot info 명령어를 사용하여 <code>ENROOT_DATA_PATH</code>에서 확인할 수 있습니다.</sub> </p></td></tr><tr><td align="center"><strong>컨테이너</strong> <br><strong>리스트</strong></td><td align="center"><sub>enroot create</sub> <br><sub>명령어로 생성한</sub> <br><sub>컨테이너 목록 출력</sub></td><td><p><sub>$ enroot list</sub><sup><sub>*</sub></sup> </p><p><sup><sub>*</sub></sup><sub>컨테이너를 생성한 노드에서만 출력됨</sub></p></td></tr><tr><td align="center"><strong>컨테이너 삭제</strong></td><td align="center"><sub>enroot create</sub> <br><sub>명령어로 생성한</sub> <br><sub>컨테이너 제거</sub></td><td><p><sub>$ enroot remove my_pytorch-v1</sub><sup><sub>*</sub></sup></p><p><sup><sub>*</sub></sup><sub>컨테이너를 생성한 노드에서만 제거할 수 있음</sub></p></td></tr></tbody></table>
+{% endhint %}
+
+
 
 ### 2. Singularity/Apptainer
 
@@ -469,9 +470,7 @@ $ module load enroot/4.2.0
 $ enroot create -n pytorch-25.03-py3-aarch64 "$IMAGE"
 $ enroot start pytorch-25.03-py3-aarch64 python3 "$PROGRAM"
 GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.039116
-```
 
-```bash
 # Pyxis는 Enroot의 slurm 플러그인으로 enroot 명령어 없이 이미지 및 마운트 경로 등을 
 # 설정하여 사용자 프로그램을 실행할 수 있음  
 
@@ -487,8 +486,8 @@ GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.03
 {% hint style="info" %}
 **Enroot/Pyxis 참고 자료**&#x20;
 
-* [Enroot 사용법 ](container-1.md#id)
-* [Pyxis(Enroot Slurm 플러그인) 사용법](https://github.com/NVIDIA/pyxis/wiki/Usage)
+* [**Enroot 사용법** ](container-1.md#id)
+* [**Pyxis(Enroot Slurm 플러그인) 사용법**](https://github.com/NVIDIA/pyxis/wiki/Usage)
 {% endhint %}
 
 ### 2. Singularity/Apptainer
@@ -523,7 +522,6 @@ GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.03
 
 {% hint style="info" %}
 **Podman에서 이미지 실행 방법**
-{% endhint %}
 
 ```
 # 모든 GPU 사용
@@ -534,6 +532,7 @@ $ podman run --rm --device nvidia.com/gpu=all \
 $ podman run --rm --device nvidia.com/gpu=0 \
     nvcr.io/nvidia/pytorch  nvidia-smi
 ```
+{% endhint %}
 
 ### 3. kisti-container&#x20;
 
@@ -546,6 +545,7 @@ kisti-container는 **컨테이너 런타임**을 감싸는 **실행 래퍼**입�
 #### **1)  기본 명령 형식**
 
 <pre class="language-bash"><code class="lang-bash">$ export PATH=$PATH:/apps/common/kisti-container/bin
+$ kisti-container --help
 <strong>$ kisti-container [Wrapper 옵션] IMAGE COMMAND [ARG ...]
 </strong></code></pre>
 
@@ -636,8 +636,9 @@ srun kisti-container --runtime pyxis ...
 
 **a. 배치 스크립트 예제**
 
+{% code title="## 다중 노드 통신 환경 점검 배치 스크립트 에제 : kc-node-doctor.sbatch" %}
 ```bash
-## 다중 노드 통신 환경 점검 배치 스크립트 에제 : kc-node-doctor.sbatch
+
 #!/bin/bash
 #SBATCH --job-name=kc-node-doctor
 #SBATCH --partition=normal
@@ -666,6 +667,7 @@ srun --nodes=2 --ntasks=2 --ntasks-per-node=1 \
     --runtime enroot --nccl ofi --doctor  \
     "$IMAGE"
 ```
+{% endcode %}
 
 **b. 배치 작업 제출 및 결과 확인**
 
@@ -752,7 +754,7 @@ cp -a /apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh \
 {% endcode %}
 
 {% hint style="info" %}
-<mark style="color:$primary;">**AI 관련 참고 자료**</mark>**는 한강 지침서 > 소프트웨어에서 아래 항목들을 참조하시기 바랍니다.**&#x20;
+AI 관련 참고 자료는 **한강 지침서 > 소프트웨어**에서 아래 항목들을 참조하시기 바랍니다.&#x20;
 
 * [**AI 프레임워크**](https://docs-ksc.gitbook.io/hangang-user-guide/software/ai)&#x20;
 * [**Pytorch**](https://docs-ksc.gitbook.io/hangang-user-guide/software/pytorch)
