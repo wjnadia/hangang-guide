@@ -105,9 +105,9 @@ srun \
 
 
 
-#### **2. 사용자 이미지 빌드 후 실행하기**
+### **2. 사용자 이미지 빌드 후 실행하기**
 
-아래 예제는 먼저 Podman을 사용하여 Pytorch NGC 이미지를 베이스로 deepspeed가 포함된 사용자 이미지를 빌드하고 Enroot 이미지 파일로 변환합니다. kisti-container(컨테이너 Wrapper, Slingshot 고속 네트워크 기반 NCCL 환경 구성)을 사용하여 Deepspeed 기반 멀티 노드 분산 훈련 프로그램을 실행합니다.&#x20;
+아래 예제는 먼저 Podman을 사용하여 Pytorch NGC 이미지를 베이스로 **DeepSpeed**가 포함된 사용자 이미지를 빌드하고 **Enroot 이미지 파일**로 변환합니다. **kisti-container**(컨테이너 런타임Wrapper, Slingshot 고속 네트워크 기반 NCCL 환경 구성)를 사용하여 DeepSpeed 기반 멀티 노드 분산 훈련 프로그램을 GPU 계산노드에서 실행합니다.&#x20;
 
 #### **1) 예제 복사하기**
 
@@ -129,7 +129,28 @@ $ ls -la .usepodman
 $ exit                # 로그아웃 후 다시 로그인
 
 ## 현재 디렉터리(.)의 Dockerille.pytorch_deepspeed로 'pytorch:deepspeed-aarch64' 이미지 빌드
+# 로그인 노드는 사용자 별 프로세스 수 및 메모리 용량에 제한이 있기 때문에, Slurm 대화형 작업으로 할당 받은 
+# 계산 노드에서 이미지 빌드를 권장함
+$ salloc --partition=normal --comment="field=misc;appl=pytorch" --nodes=1 --gpus-per-node=4 \
+--exclusive --time=10:00:00 
+
+# 사용자 쉘 확인 및 계산노드 podman 초기화 스크립트 실행
+$ echo $SHELL 
+/bin/bash 
+# bash/zsh/ksh 쉘 사용자는 podman-init.sh 스크립트 실행
+$ source /apps/common/podman/podman-init.sh  
+# csh/tcsh 쉘 사용자는 podman-init.csh 스크립트 실행
+$ source /apps/common/podman/podman-init.csh 
+
+# 이미지 빌드 
 $ podman build -t pytorch:deepspeed-aarch64 -f Dockerille.pytorch_deepspeed .
+STEP 1/2: FROM nvcr.io/nvidia/pytorch:25.03-py3
+Trying to pull nvcr.io/nvidia/pytorch:25.03-py3...
+--[중략]--
+STEP 2/2: RUN pip install --no-cache-dir deepspeed==0.18.9
+--[중략]--
+Successfully tagged localhost/pytorch:deepspeed-aarch64
+
 $ podman images
 REPOSITORY                                 TAG                     IMAGE ID      CREATED        SIZE
 localhost/pytorch:deepspeed-aarch64        deepspeed-aarch64       5e7a4783117b  21 minutes ago 22.1 GB
@@ -138,7 +159,14 @@ localhost/pytorch:deepspeed-aarch64        deepspeed-aarch64       5e7a4783117b 
 $ cd /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed
 $ module load enroot/4.2.0
 $ enroot import -o pytorch-deepspeed-aarch64.sqsh podman://localhost/pytorch:deepspeed-aarch64
-$ ls pytorch-deepspeed-aarch64.sqsh
+[INFO] Fetching image
+--[중략]--
+[INFO] Extracting image content...
+[INFO] Creating squashfs filesystem...
+--[중략]--
+
+$ ls -lh pytorch-deepspeed-aarch64.sqsh
+-rw-r--r-- 1 a1234 a1234 11G Nov  6 13:42 pytorch-deepspeed-aarch64.sqsh
 ```
 
 {% code title="예제 Dockerfile" %}
@@ -146,9 +174,7 @@ $ ls pytorch-deepspeed-aarch64.sqsh
 ## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/Dockerfile.pytorch_deepspeed
 
 FROM nvcr.io/nvidia/pytorch:25.03-py3
-RUN umask 022
 RUN pip install --no-cache-dir deepspeed==0.18.9
-RUN chmod -R a+rX /usr/local /opt
 ```
 {% endcode %}
 
@@ -156,53 +182,97 @@ RUN chmod -R a+rX /usr/local /opt
 
 #### **3) 예제 실행하기**
 
+ZeRO 최적화로 옵티마이저 상태와 그래디언트를 GPU들에 나눠 저장하는 데이터 병렬 학습 예제입니다. GH200 2노드에서 노드당 GPU 4장, 총 8개 rank로 ZeRO-2 학습이 동작합니다.
+
+{% hint style="info" %}
+**DeepSpeed**: Microsoft가 개발한 대규모 모델 학습 최적화 라이브러리입니다. 현재 예제의 ZeRO-2(Zero Redundancy Optimizer stage 2)는 각 GPU가 모델 전체를 가지되, 옵티마이저 상태와 그래디언트는 GPU 수만큼 나눠 저장해 GPU당 메모리 사용량을 줄이는 방식입니다.
+{% endhint %}
+
 <pre class="language-bash"><code class="lang-bash"><strong>## 배치 작업 제출하기(GH200 GPU 계산노드 2대 할당) 
 </strong><strong>$ cd /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed
-</strong><strong>$ sbatch kc-run-pyxis.sbatch
+</strong><strong>$ sbatch run-kc-pyxis.sbatch
 </strong>Submitted batch job 1234567
 
 ## 작업결과 확인하기
-$ cat gpu-pyxis-1234567.out
-GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.011594
-GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.006231
-GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.022566
-GPU_SMOKE_PASS host=node0124 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=-0.048418
+$ cat kc-ds-pyxis-1234567.out
+============================================================
+  DeepSpeed 분산 학습
+  World size : 8
+  Nodes      : 2
+  GPUs/node  : 4
+  Device     : NVIDIA GH200 120GB
+  NCCL ver   : (2, 25, 1)
+============================================================
+<strong>--[중략]--
+</strong>
+  epoch 0 step    0  loss=10.5000
+  epoch 0 step   20  loss=10.5000
+  epoch 0 step   40  loss=10.4375
+  epoch 0 step   60  loss=10.4375
+  epoch 0 step   80  loss=10.4375
+  epoch 0 step  100  loss=10.4375
+  epoch 0 step  120  loss=10.4375
+  epoch 0 step  140  loss=10.4375
+  epoch 0 done  avg_loss=10.4383  time=6.1s  steps=157
+  epoch 1 step    0  loss=10.3750
+  epoch 1 step   20  loss=10.3750
+  epoch 1 step   40  loss=10.3750
+  epoch 1 step   60  loss=10.3750
+  epoch 1 step   80  loss=10.3750
+  epoch 1 step  100  loss=10.3750
+  epoch 1 step  120  loss=10.3750
+  epoch 1 step  140  loss=10.3750
+  epoch 1 done  avg_loss=10.3857  time=6.3s  steps=157
+학습 완료
 </code></pre>
 
 {% code title="예제 작업 스크립트 파일" %}
 ```bash
-## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/kc-run-pyxis.sbatch
+## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/run-kc-pyxis.sbatch
 
 #!/bin/bash
-#SBATCH --job-name=gpu-pyxis
+#SBATCH --job-name=kc-ds-pyxis
 #SBATCH --partition=normal
-#SBATCH --comment="field=misc;appl=pytorch"
-#SBATCH --nodes=1
-#SBATCH --tasks-per-node=4
+#SBATCH --comment="field=misc;appl=deepspeed"
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
+#SBATCH --cpus-per-task=72
 #SBATCH --exclusive
-#SBATCH --time=00:05:00
+#SBATCH --time=00:30:00
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.err
 
-ROOT=/scratch/$USER/kisti-container
+ROOT="/scratch/$USER/kisti-container"
+KC="/apps/common/kisti-container/bin/kisti-container"
 IMAGE=$ROOT/images/pytorch-25.03-py3-aarch64.sqsh
-PROGRAM=$ROOT/examples/02-gpu-smoke/gpu_smoke.py
+TRAIN_SCRIPT=$ROOT/examples/07-pytorch-deepspeed/train_deepspeed.py
 
 module purge
+module load aws-ofi-nccl/1.20.0
+module load libfabric/2.3.1
 module load enroot/4.2.0
 
-# --container-image 파라미터를 사용하여 Enroot 컨테이너 이미지를 설정함(Pyxis slurm 플러그인 사용)
-srun \
-  --mpi=none \
-  --container-image="$IMAGE" \
-  python3 "$PROGRAM"
+USER=`id -un`
+export CACHE_ROOT=/scratch/$USER/.cache/job-$SLURM_JOB_ID
+mkdir -p $CACHE_ROOT
+
+export TRITON_CACHE_DIR=$CACHE_ROOT/triton
+export TORCH_EXTENSIONS_DIR=$CACHE_ROOT/torch_extensions
+export XDG_CACHE_HOME=$CACHE_ROOT/xdg
+
+"${KC}" \
+    --runtime pyxis --workload pytorch-dist \
+    --launcher torchrun --local-processes 4 --nccl ofi \
+    --diagnose \
+    "$IMAGE" "$TRAIN_SCRIPT" --deepspeed --deepspeed_config ${SLURM_SUBMIT_DIR}/ds_config.json --epochs 2
+
 ```
 {% endcode %}
 
 
 
-## 나. 컨테이너 도구 선택 가이드
+## 다. 컨테이너 도구 선택 가이드
 
 작업 목적에 따라 아래와 같이 컨테이너 도구를 선택할 수 있습니다.
 
@@ -225,7 +295,7 @@ Enroot/Pyxis와 Singularity/Apptainer는 실행 측면에서 같은 일을 하�
 
 
 
-## 다. 이미지 빌드 (Podman)
+## 라. 이미지 빌드 (Podman)
 
 작업을 실행 할 계산노드의 아키텍처에 따라 CPU 또는 GPU 로그인 노드에서 **Podman**을 사용하여 컨테이너 이미지를 빌드합니다.&#x20;
 
@@ -386,7 +456,7 @@ $ podman build -t my_pytorch:deepspeed-aarch64 .
 
 
 
-## 라. 이미지 업로드
+## 마. 이미지 업로드
 
 Podman으로 빌드한 이미지를 **외부 저장소인 Docker Hub** 또는 **KISTI 내부 저장소인 myhub**에 업로드하여 관리 및 공유 할 수 있습니다. 특히, 로그인  또는 계산 노드의 로컬 파일시스템에 저장된 이미지는 영구 보관되지  않기  때문에, <mark style="color:$primary;">**외부 또는 내부 저장소**</mark><mark style="color:$primary;">에</mark> <mark style="color:$primary;"></mark><mark style="color:$primary;">**이미지**</mark><mark style="color:$primary;">를</mark> <mark style="color:$primary;"></mark><mark style="color:$primary;">**업로드**</mark><mark style="color:$primary;">하는 것을</mark> <mark style="color:$primary;"></mark><mark style="color:$primary;">**권장**</mark><mark style="color:$primary;">합니다.</mark>  &#x20;
 
@@ -466,7 +536,7 @@ $ podman push myhub.ksc.re.kr/[프로젝트명]/pytorch:deepspeed-aarch64
 
 
 
-## 마. 이미지 변환&#x20;
+## 바. 이미지 변환&#x20;
 
 **Podman** 또는 **Docker Hub**, **myhub** 등에 저장된 사용자 이미지는 컨테이너 실행 도구에 맞는 변환 과정을 거쳐야  합니다.
 
@@ -616,7 +686,7 @@ aarch64
 
 
 
-## 바. 이미지 실행
+## 사. 이미지 실행
 
 생성된 이미지는 **Enroot** 또는 **Singularity/Apptainer** 환경에 배포하여 실행할 수 있습니다.\
 아래 예시는 **slurm 대화식 작업**으로 스케줄러가 할당한 **계산 노드**에서 각  **컨테이너 런타임 별** **이미지 실행 예시** 입니다.  [**Slurm 배치 작업**](container-1.md#id-1-pyxis)으로 실행 시 Enroot 의 **Pyxis** 사용을 권장합니다.
@@ -880,7 +950,7 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 
 
 
-## 사. 스케줄러(SLURM)를 통한 작업 실행 예제
+## 아. 스케줄러(SLURM)를 통한 작업 실행 예제
 
 **컨테이너  런타임** 또는 **kisti-container**를 함께 사용하는 Slurm 작업  스크립트를 작성 및 제출하여 계산노드에서 사용자 작업을 실행할 수 있습니다. 아래와 같이 관심 있는 작업 유형의 **예제 디렉터리**와 예제 실행에 필요한 **이미지 파일**을 사용자 작업 공간으로 복사하여 실행해 볼 수 있습니다.
 
