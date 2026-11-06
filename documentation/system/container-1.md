@@ -190,7 +190,7 @@ ZeRO 최적화로 옵티마이저 상태와 그래디언트를 GPU들에 나눠 
 
 <pre class="language-bash"><code class="lang-bash"><strong>## 배치 작업 제출하기(GH200 GPU 계산노드 2대 할당) 
 </strong><strong>$ cd /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed
-</strong><strong>$ sbatch run-kc-pyxis.sbatch
+</strong><strong>$ sbatch run-kc-enroot.sbatch
 </strong>Submitted batch job 1234567
 
 ## 작업결과 확인하기
@@ -228,10 +228,10 @@ $ cat kc-ds-pyxis-1234567.out
 
 {% code title="예제 작업 스크립트 파일" %}
 ```bash
-## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/run-kc-pyxis.sbatch
+## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/run-kc-enroot.sbatch
 
 #!/bin/bash
-#SBATCH --job-name=kc-ds-pyxis
+#SBATCH --job-name=kc-ds-enroot
 #SBATCH --partition=normal
 #SBATCH --comment="field=misc;appl=deepspeed"
 #SBATCH --nodes=2
@@ -261,12 +261,12 @@ export TRITON_CACHE_DIR=$CACHE_ROOT/triton
 export TORCH_EXTENSIONS_DIR=$CACHE_ROOT/torch_extensions
 export XDG_CACHE_HOME=$CACHE_ROOT/xdg
 
-"${KC}" \
-    --runtime pyxis --workload pytorch-dist \
+srun \
+  "${KC}" \
+    --runtime enroot --workload pytorch-dist \
     --launcher torchrun --local-processes 4 --nccl ofi \
     --diagnose \
     "$IMAGE" "$TRAIN_SCRIPT" --deepspeed --deepspeed_config ${SLURM_SUBMIT_DIR}/ds_config.json --epochs 2
-
 ```
 {% endcode %}
 
@@ -276,21 +276,23 @@ export XDG_CACHE_HOME=$CACHE_ROOT/xdg
 
 작업 목적에 따라 아래와 같이 컨테이너 도구를 선택할 수 있습니다.
 
-<table><thead><tr><th width="253.434814453125" align="center">필요한 작업</th><th align="center">선택 도구</th><th align="center">참고</th></tr></thead><tbody><tr><td align="center">새 이미지를 만들거나<br>기존 이미지에 패키지를 추가하기</td><td align="center"><strong>Podman(권장)</strong><br>Singularity/Apptainer</td><td align="center"><a href="container-1.md#id-2"><strong>다. 이미지 빌드</strong></a><br><a href="container-1.md#id-3"><strong>라. 이미지 업로드</strong></a><br><a href="container-1.md#id-4"><strong>마. 이미지 변환</strong></a></td></tr><tr><td align="center">계산 노드에서 <br>컨테이너 기반 <br>작업 실행</td><td align="center"><strong>Enroot/Pyxis(권장)</strong><br>Singularity/Apptainer</td><td align="center"><a href="container-1.md#id-5"><strong>바. 이미지 실행</strong></a><br><a href="container-1.md#slurm"><strong>사. 스케줄러를 통한 작업 실행</strong></a></td></tr><tr><td align="center">일반 이미지로<br>MPI 작업 및 분산 학습 실행</td><td align="center"><strong>kisti-container</strong></td><td align="center"><a href="container-1.md#id-3.-kisti-container"><strong>바. 3. kisti-container</strong></a><br><a href="container-1.md#slurm"><strong>사. 스케줄러를 통한 작업 실행</strong></a></td></tr></tbody></table>
+<table><thead><tr><th width="253.434814453125" align="center">필요한 작업</th><th align="center">선택 도구</th><th align="center">참고</th></tr></thead><tbody><tr><td align="center">새 이미지를 만들거나<br>패키지 추가</td><td align="center"><strong>Podman(권장)</strong><br>Apptainer</td><td align="center"><a href="container-1.md#podman"><strong>이미지 빌드</strong></a></td></tr><tr><td align="center">계산 노드에서 <br>컨테이너 기반 <br>작업 실행</td><td align="center"><strong>Enroot(권장)</strong><br>Apptainer</td><td align="center"><a href="container-1.md#id-5"><strong>이미지 실행</strong></a></td></tr><tr><td align="center">일반 이미지로<br>MPI 작업 및 분산 학습 실행</td><td align="center"><strong>kisti-container</strong></td><td align="center"><a href="container-1.md#id-3.-kisti-container"><strong>kisti-container</strong></a></td></tr></tbody></table>
 
-**Podman**은 Dockerfile 기반으로 이미지를 만들고 레지스트리에 올려 관리할 수 있어 **빌드 단계**에 **권장**합니다. Singularity/Apptainer는 definition 파일로 .sif 이미지를 직접 빌드할 수도 있습니다.
+Podman은 Dockerfile 기반으로 이미지를 만들고 레지스트리에 올려 관리할 수 있어 빌드 단계에 권장합니다. Apptainer는 definition 파일로 .sif 이미지를 직접 빌드할 수 있습니다. 이미지 공유가 필요하면 [**myhub**](container-1.md#id-3-1)에 저장할 수 있습니다. Podman으로 빌드한 이미지는 계산 노드에서 실행할 런타임에 맞춰 .sqsh(Enroot) 또는 .sif (Apptainer)로 변환합니다.
 
-**Podman**으로 **빌드한 이미지**는 계산 노드에서 실행할 런타임에 맞춰 .sqsh(Enroot/Pyxis) 또는 .sif (Singularity/Apptainer)로 **변환**합니다.
+Enroot과 Apptainer는 실행 측면에서 같은 일을 하며 이미지 형식만 다릅니다(.sqsh/.sif). 한강에서는 Slurm 연동과 GPU 최적화를 위해 Enroot을 권장하며, 기존 누리온·뉴론에서 사용하던 .sif 이미지를 활용하실 경우에는 Apptainer를 사용하면 됩니다.
 
-Enroot/Pyxis와 Singularity/Apptainer는 실행 측면에서 같은 일을 하며 이미지 형식만 다릅니다(.sqsh/.sif).    한강에서는 Slurm 연동과 GPU 최적화를 위해 **Enroot/Pyxis**를 **권장**하며, 기존 누리온·뉴론에서 사용하던 .sif 이미지나 배치 스크립트를 그대로 활용하실 경우에는 Singularity/Apptainer를 사용하시면 됩니다.
+Slingshot 고속 네트워크를 지원하는 Pytorch/NeMo 이미지를 다음 경로에 제공합니다. **/apps/common/kisti-container/images/slingshot**&#x20;
 
-**Slingshot 고속 네트워크**를 **지원**하는 **Pytorch/NeMo 이미지**를 /apps/common/kisti-container/images/slingshot) 아래에 제공합니다. 다중 노드 작업에는 이 이미지를 권장하며, **그 밖의 이미지**는 **`kisti-container`**&#xB85C; **실행**하면 MPI·NCCL 통신 설정을 자동으로 구성해줍니다.
+다중 노드 GPU 학습에는 이 이미지 또는 이를 기반으로 만든 사용자 이미지를 권장합니다.
+
+기존 NGC 이미지나 사용자 이미지에서 Slingshot 기반 MPI·NCCL 통신이 필요한 경우에는 **kisti-container**를 이용해 호스트 통신 환경과 연계할 수 있습니다.
 
 {% hint style="info" %}
-* **Podman** : 일반 사용자 권한 기반의 이미지 빌드 및 관리 도구입니다. **Docker**를 **대체**하여 **이미지**를 **생성**할 때 사용합니다.
-* **Enroot / Pyxis** : NVIDIA에서 개발한 HPC 전용 런타임으로 .sqsh 이미지를 실행합니다. NVIDIA GPU에 최적화되어 있으며, **Pyxis**는 Enroot를 **Slurm**에서 바로 실행할 수 있게 해주는 **스케줄러** **플러그인**입니다.
-* **Singularity / Apptainer** : HPC 환경에 최적화된 컨테이너 도구로 .sif 이미지를 실행합니다. **Apptainer**는 Singularity에서 분리되어 발전한 **오픈소스** **컨테이너 런타임**으로, 대부분의 이미지 형식과 사용 방식이 singularity와호환됩니다.
-* **kisti-container** : 컨테이너 런타임을 감싸는 실행 **Wrapper 프로그램**입니다. MPI나 분산 학습 작업에 필요한 **Slingshot 통신 설정**을 **자동**으로 **구성**합니다.
+* **Podman** : 일반 사용자 권한 기반의 이미지 빌드 및 관리 도구입니다. Docker를 대체하여 이미지를 생성할 때 사용합니다.
+* **Enroot** : NVIDIA에서 개발한 HPC 전용 런타임으로 .sqsh 이미지를 실행합니다. Enroot을 Slurm에서 바로 실행할 수 있게 해주는 스케줄러 플러그인으로 Pyxis를 제공합니다.&#x20;
+* **Apptainer** : HPC 환경에 최적화된 컨테이너 도구로 .sif 이미지를 실행합니다. Singularity에서 분리되어 발전한 오픈소스 컨테이너 런타임으로, 대부분의 이미지 형식과 사용 방식이 서로호환됩니다.
+* **kisti-container** : Enroot 또는 Apptainer로 실행할 때 MPI나 분산 학습 작업에 필요한 호스트의 Slingshot 통신 환경을 연계하도록 돕는 Wrapper 입니다.
 {% endhint %}
 
 
@@ -300,12 +302,12 @@ Enroot/Pyxis와 Singularity/Apptainer는 실행 측면에서 같은 일을 하�
 작업을 실행 할 계산노드의 아키텍처에 따라 CPU 또는 GPU 로그인 노드에서 **Podman**을 사용하여 컨테이너 이미지를 빌드합니다.&#x20;
 
 {% hint style="info" %}
-**Singularity 컨테이너 이미지**를 직접 빌드 하기 위해서는 뉴론 컨테이너 활용 가이드의  [**가. 컨테이너 이미지 빌드하기**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container#id) 를 참조하시기 바랍니다.&#x20;
+**apptainer 컨테이너 이미지**를 직접 빌드 하기 위해서는 뉴론 컨테이너 활용 가이드의  [**가. 컨테이너 이미지 빌드하기**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container#id) 를 참조하시기 바랍니다.&#x20;
 {% endhint %}
 
 ### 1. Podman 사용 설정
 
-Podman 사용 환경 설정을 위해서는 먼저 사용자 홈 디렉터리에 .usepodman 이라는 파일을 생성해야 합니다. 한 번만 생성하면 되고 로그아웃 후 다시 로그인 하면 바로 적용 됩니다.
+Podman 사용 환경 설정을 위해서는 먼저 사용자 홈 디렉터리에 **.usepodman** 이라는 파일을 생성해야 합니다. 한 번만 생성하면 되고 로그아웃 후 다시 로그인 하면 바로 적용 됩니다.
 
 ```bash
 $ cd ~                # 사용자홈 디렉터리(/home01/[ID])로 이동             
@@ -456,23 +458,16 @@ $ podman build -t my_pytorch:deepspeed-aarch64 .
 
 
 
-## 마. 이미지 업로드
+### 3. 이미지 업로드
 
 Podman으로 빌드한 이미지를 **외부 저장소인 Docker Hub** 또는 **KISTI 내부 저장소인 myhub**에 업로드하여 관리 및 공유 할 수 있습니다. 특히, 로그인  또는 계산 노드의 로컬 파일시스템에 저장된 이미지는 영구 보관되지  않기  때문에, <mark style="color:$primary;">**외부 또는 내부 저장소**</mark><mark style="color:$primary;">에</mark> <mark style="color:$primary;"></mark><mark style="color:$primary;">**이미지**</mark><mark style="color:$primary;">를</mark> <mark style="color:$primary;"></mark><mark style="color:$primary;">**업로드**</mark><mark style="color:$primary;">하는 것을</mark> <mark style="color:$primary;"></mark><mark style="color:$primary;">**권장**</mark><mark style="color:$primary;">합니다.</mark>  &#x20;
 
-### 1.  Docker Hub 또는 myhub 로그인
+#### 1)   myhub 또는 Docker Hub 로그인
 
 먼저 Podman을 통해 Docker Hub 또는 myhub 계정으로 인증합니다.
 
-#### **1) Docker Hub**
-
-```
-$ podman login docker.io
-# Username과 Password(또는 Access Token)를 입력합니다.
-```
-
-#### **2) myhub**
-
+{% tabs %}
+{% tab title="myhub" %}
 myhub 를 사용하기 위해서는  [**https://myhub.ksc.re.kr**](https://myhub.ksc.re.kr/)에 슈퍼컴퓨터 계정으로 로그인하여 **사용자 프로젝트**를 생성하고  **CLI 시크릿**을  복사해 와야 합니다. 자세한 사용 방법은 [**myhub 사용법**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-12-how-to-use-containers#myhub)을 참조하시기 바랍니다.&#x20;
 
 {% code expandable="true" %}
@@ -482,67 +477,69 @@ $ podman login myhub.ksc.re.kr
 ```
 {% endcode %}
 
-{% tabs %}
-{% tab title="사용자 프로젝트 생성 및 CLI 시크릿 복사하기" %}
 1\) [**myhub**](https://myhub.ksc.re.kr/)에 로그인하여 **새 프로젝트**를 생성하고 액세스 레벨(공개/비공개)을 설정합니다.&#x20;
 
 <div data-with-frame="true"><figure><img src="../.gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure></div>
 
-2\) myhub 대시 보드 상단 오른편의 사용자 ID를 클릭하여 사용자 프로필 메뉴를 선택하고, **CLI 시크릿**을 **복사**합니다.&#x20;
+2\) myhub 대시 보드 상단 오른편의 사용자 ID를 클릭하여 사용자 프로필 메뉴를 선택하고, **CLI 시크릿**을 **복사**합니다.
 
 <div data-with-frame="true"><figure><img src="../.gitbook/assets/image (15).png" alt="" width="375"><figcaption></figcaption></figure></div>
 {% endtab %}
+
+{% tab title="Docker Hub" %}
+```
+$ podman login docker.io
+# Username과 Password(또는 Access Token)를 입력합니다.
+```
+{% endtab %}
 {% endtabs %}
 
-
-
-### 2. 이미지 태그(Tag) 설정
+#### 2) 이미지 태그(Tag) 설정
 
 업로드를 위해서는 이미지 이름을 **\[레지스트리주소]/\[Username 또는 프로젝트명]/\[이미지명]:\[버전태그]** 형식으로 지정해야 합니다.
 
-#### **1) Docker Hub**
-
-```
-# 로컬 이미지(pytorch:deepspeed-aarch64)를 Docker Hub 형식으로 태그
-$ podman tag localhost/pytorch:deepspeed-aarch64 docker.io/[Username]/pytorch:deepspeed-aarch64
-```
-
-#### **2) myhub**
-
+{% tabs %}
+{% tab title="myhub" %}
 **\[프로젝트명]**&#xC740; myhub에 로그인하여 생성한 **사용자 프로젝트**를 지정해야 합니다.&#x20;
 
 ```
 # 로컬 이미지(pytorch:deepspeed-aarch64)를 myhub 형식으로 태그
 $ podman tag localhost/pytorch:deepspeed-aarch64 myhub.ksc.re.kr/[프로젝트명]/pytorch:deepspeed-aarch64
 ```
+{% endtab %}
 
+{% tab title="Docker Hub" %}
+<pre><code><strong># 로컬 이미지(pytorch:deepspeed-aarch64)를 Docker Hub 형식으로 태그
+</strong>$ podman tag localhost/pytorch:deepspeed-aarch64 docker.io/[Username]/pytorch:deepspeed-aarch64
+</code></pre>
+{% endtab %}
+{% endtabs %}
 
-
-### 3. 이미지 업로드(Push)
+#### 3) 이미지 업로드(Push)
 
 태그가 완료된 이미지를 Docker Hub 또는 myhub로 전송합니다.
 
-#### **1) Docker Hub**
-
-```
-$ podman push docker.io/[Username]/pytorch:deepspeed-aarch64
-```
-
-#### **2) myhub**
-
+{% tabs %}
+{% tab title="myhub" %}
 ```
 $ podman push myhub.ksc.re.kr/[프로젝트명]/pytorch:deepspeed-aarch64
 ```
+{% endtab %}
 
+{% tab title="Docker Hub" %}
+```
+$ podman push docker.io/[Username]/pytorch:deepspeed-aarch64
+```
+{% endtab %}
+{% endtabs %}
 
-
-## 바. 이미지 변환&#x20;
+#### 4) 이미지 변환&#x20;
 
 **Podman** 또는 **Docker Hub**, **myhub** 등에 저장된 사용자 이미지는 컨테이너 실행 도구에 맞는 변환 과정을 거쳐야  합니다.
 
-### 1. Enroot&#x20;
+**a. Enroot**&#x20;
 
-이미지를 Enroot 실행용 SquashFS 포맷으로 변환하여 .sqsh 파일로  저장합니다.&#x20;
+Podman으로 빌드한 이미지를 Enroot 실행용 SquashFS 포맷으로 변환하여 .sqsh 파일로  저장합니다.&#x20;
 
 <pre class="language-bash"><code class="lang-bash"># sqsh 이미지 파일 생성(read-only, 계산 노드에서 작업 실행에 적합)
 $ module load enroot/4.2.0
@@ -569,14 +566,15 @@ $ enroot create -n pytorch-deepspeed-aarch64 pytorch-deepspeed-aarch64.sqsh
 
 
 
-### 2. Singularity/Apptainer
+**b. Apptainer**
 
-기존 누리온/뉴론 작업 방식 유지 또는 타 시스템과의 이미지 공유가 필요한 경우 활용합니다.
+Podman으로 빌드한 이미지를 Apptainer 실행용 SIF(Singularity Image Format) 포맷으로 변환하여 .sif 파일로 저장합니다.&#x20;
 
-<pre class="language-bash"><code class="lang-bash">## Podman 이미지를 tar로 내보낸 후 .sif 파일로 빌드
+```bash
+## Podman 이미지를 tar로 내보낸 후 .sif 파일로 빌드
 $ podman save localhost/pytorch:deepspeed-aarch64 -o pytorch-deepspeed-aarch64.tar
 
-# Singularity/Apptainer에서 용량이 큰 이미지를 변환 또는 가져올 때 로그인 노드는 사용자 별 
+# Apptainer에서 용량이 큰 이미지를 변환 또는 가져올 때 로그인 노드는 사용자 별 
 # 메모리 용량 제한으로 에러가 발생할 수 있음.
 # slurm 대화식 작업으로 할당 받은 계산 노드에서 이미지 변환 또는 가져오기 실행을 권장함
 
@@ -589,26 +587,16 @@ salloc: Nodes node0001 are ready for job
 $ 
 
 # tar 이미지 파일로부터 변환하기 
-# Singularity
-<strong>$ module load singularity/4.5.0
-</strong>$ singularity build pytorch-deepspeed-aarch64.sif docker-archive://pytorch-deepspeed-aarch64.tar
-
-# Apptainer
 $ module load apptainer/1.4.5
 $ apptainer build pytorch-deepspeed-aarch64.sif docker-archive://pytorch-deepspeed-aarch64.tar
 
 ## Docker Hub 또는 myhub에서 이미지 가져오기
-# Singularity 
-$ module load singularity/4.5.0
-$ singularity pull pytorch-deepspeed-aarch64.sif docker://[Username]/pytorch:deepspeed-aarch64
-
-# Apptainer
 $ module load apptainer/1.4.5
 $ apptainer pull pytorch-deepspeed-aarch64.sif docker://myhub.ksc.re.kr/[프로젝트명]/pytorch:deepspeed-aarch64
-</code></pre>
+```
 
 {% hint style="info" %}
-**KISTI에서 빌드하여  배포하는 Enroot/Pyxis(.sqsh), Singularity/Apptainer(.sif) 이미지 파일 경로**&#x20;
+**KISTI에서 빌드하여  배포하는 Enroot(.sqsh), Apptainer(.sif) 이미지 파일 경로**&#x20;
 
 * _**일반 NGC 이미지  :  /apps/common/kisti-container/images**_
 
@@ -641,14 +629,14 @@ kisti-nemo-25.04-gh200-r1-aarch64.sqsh
 </code></pre>
 {% endhint %}
 
-### 3. 아키텍처와 이미지 호환성
+#### 3) 아키텍처와 이미지 호환성
 
 컨테이너 이미지의 CPU 아키텍처는 로그인/계산 노드와 같아야 합니다.
 
 <table><thead><tr><th width="207.98016357421875" align="center">노드 구분
 (Slurm 파티션)</th><th width="167.03265380859375" align="center">CPU 아키텍처</th><th width="127.53631591796875" align="center">GPU</th><th align="center">이미지 파일 예시</th></tr></thead><tbody><tr><td align="center">GH200 GPU 노드<br>(normal)</td><td align="center"><code>aarch64(arm64)</code><br><code>(Grace CPU)</code></td><td align="center">Hopper GPU</td><td align="center"><sub>pytorch-25.03-py3-aarch64.sif</sub><br><sub>pytorch-25.03-py3-aarch64.sqsh</sub></td></tr><tr><td align="center">CPU 노드<br>(normal_cpu, bigsmp)</td><td align="center"><code>x86_64</code><br><code>(AMD EPYC CPU)</code></td><td align="center">없음</td><td align="center"><sub>pytorch-25.03-py3-x86_64.sif</sub></td></tr></tbody></table>
 
-#### **1) 현재 노드 아키텍처 확인**
+**a. 현재 노드 아키텍처 확인**
 
 ```bash
 $ uname -m  (GH200 GPU 노드)
@@ -658,7 +646,7 @@ $ uname -m   (AMD EPYC CPU 노드)
 x86_64
 ```
 
-#### **2) 이미지 아키텍처 확인**
+**b. 이미지 아키텍처 확인**
 
 아키텍처 판별이 용이하도록  이미지 태그(Podman) 또는 파일명에 aarch64(arm64) 또는 x86\_64(amd64) 를 넣는 것을 권장합니다.
 
@@ -667,31 +655,25 @@ x86_64
 <strong>$ podman image inspect myhub.ksc.re.kr/wjnadia/pytorch:25.03-py3-aarch64 --format '{{.Architecture}}'
 </strong>arm64
 
-## Singularity
-$ module load singularity/4.5.0
-$ singularity inspect --labels pytorch-25.03-py3-aarch64.sif | grep build-arch
-org.label-schema.build-arch: arm64
+## Enroot
+$ module load enroot/4.2.0
+$ enroot create -n pytorch-25.03-py3-aarch64 pytorch-25.03-py3-aarch64.sqsh
+$ enroot start pytorch-25.03-py3-aarch64 uname -m
+aarch64
 
 ## Apptainer
 $ module load apptainer/1.4.5
 $ apptainer inspect --labels pytorch-25.03-py3-x86_64.sif | grep build-arch
 org.label-schema.build-arch: amd64   
-
-## Enroot/Pyxis
-$ module load enroot/4.2.0
-$ enroot create -n pytorch-25.03-py3-aarch64 pytorch-25.03-py3-aarch64.sqsh
-$ enroot start pytorch-25.03-py3-aarch64 uname -m
-aarch64
 </code></pre>
 
 
 
-## 사. 이미지 실행
+## 마. 이미지 실행
 
-생성된 이미지는 **Enroot** 또는 **Singularity/Apptainer** 환경에 배포하여 실행할 수 있습니다.\
-아래 예시는 **slurm 대화식 작업**으로 스케줄러가 할당한 **계산 노드**에서 각  **컨테이너 런타임 별** **이미지 실행 예시** 입니다.  [**Slurm 배치 작업**](container-1.md#id-1-pyxis)으로 실행 시 Enroot 의 **Pyxis** 사용을 권장합니다.
+생성된 이미지는 **Enroot** 또는 **Apptainer** 환경에 배포하여 실행할 수 있습니다. 아래 예시는 **slurm 대화식 작업**으로 스케줄러가 할당한 **계산 노드**에서 각  **컨테이너 런타임 별** **이미지 실행 예시** 입니다. &#x20;
 
-### 1. Enroot/Pyxis
+### 1. Enroot
 
 ```bash
 # GPU 계산 노드에서 squashFS 이미지 파일을 로드하고 실행
@@ -725,34 +707,27 @@ GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.03
 * [**Pyxis(Enroot Slurm 플러그인) 사용법**](https://github.com/NVIDIA/pyxis/wiki/Usage)
 {% endhint %}
 
-### 2. Singularity/Apptainer
+### 2. Apptainer
 
 ```bash
-# GPU 계산노드에서 Singularity/Apptainer 이미지를 로드하여 실행
+# GPU 계산노드에서 Apptainer 이미지를 로드하여 실행
 # --nv: GPU 가속 연동 옵션 필수
-# singularity와 apptainer는 명령어 이름만 다르고 옵션 및 이미지가 상호 호환이 됨
+# apptainer는 singularity와 명령어 이름만 다르고 옵션 및 이미지가 상호 호환이 됨
 
 $ salloc --partition=normal --comment="field=misc;appl=pytorch" --nodes=1 --gpus-per-node=4 \
 --exclusive --time=01:00:00
 $ export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sif"
 $ export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
-
-$ module load singularity/4.5.0
-$ singularity exec --nv "$IMAGE" python3 "$PROGRAM"
-GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.039116
-
-$ module unload singularity/4.5.0
 $ module load apptainer/1.4.5
 $ apptainer exec --nv "$IMAGE" python3 "$PROGRAM"
 GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.039116
 ```
 
 {% hint style="info" %}
-**Singularity / Apptainer 참고 자료**
+&#x20;**Apptainer 참고 자료**
 
-* [뉴론 Singularity 컨테이너 사용자 지침서](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container)
-* [Singularity 공식 사용자 가이드](https://docs.sylabs.io/guides/main/user-guide/)
 * [Apptainer 공식 사용자 가이드](https://apptainer.org/docs/user/main/introduction.html)
+* [뉴론 Singularity 컨테이너 사용자 지침서](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container)
 {% endhint %}
 
 {% hint style="info" %}
@@ -771,7 +746,7 @@ $ podman run --rm --device nvidia.com/gpu=0 \
 
 ### 3. kisti-container&#x20;
 
-kisti-container는 컨테이너 런타임을 감싸는 실행 래퍼로 **Slingshot을 지원하지 않는 이미지를 실행할 때 사용**할 수 있습니다. **MPI**나 **분산 학습 작업**을 컨테이너에서 실행할 때 필요한 설정\*을 자동으로 처리합니다. Singularity/Apptainer, Enroot(Pyxis)를 모두 지원하며, 노드의 CPU 아키텍처와 로드된 모듈을 보고 필요한 설정을 자동으로 선택합니다.
+kisti-container는 컨테이너 런타임을 감싸는 실행 래퍼로 **Slingshot을 지원하지 않는 이미지를 실행할 때 사용**할 수 있습니다. **MPI**나 **분산 학습 작업**을 컨테이너에서 실행할 때 필요한 설정\*을 자동으로 처리합니다. Enroot, Apptainer를 지원하며, 노드의 CPU 아키텍처와 로드된 모듈을 보고 필요한 설정을 자동으로 선택합니다.
 
 \***Slingshot** 네트워크 라이브러리 연결, **NCCL** 통신 플러그인 지정, **분산 환경변수** 지정
 
@@ -786,19 +761,53 @@ $ kisti-container --help
 
 #### **2) 주요 옵션**
 
-<table data-search="false"><thead><tr><th width="178.07244873046875">옵션</th><th>값</th><th>설명</th></tr></thead><tbody><tr><td><code>--runtime</code></td><td><code>singularity</code>, <code>apptainer</code>, <code>enroot</code>, <code>pyxis</code></td><td>컨테이너 런타임<br>(Default : Pyxis)</td></tr><tr><td><code>--workload</code></td><td><code>generic</code>, <code>pytorch-dist*</code></td><td>워크로드 구분 <br>(Default : generic)</td></tr><tr><td><code>--launcher</code></td><td><code>srun-native</code>, <code>torchrun</code></td><td>분산 프로세스 생성 방식** <br>(Default : srun-native)</td></tr><tr><td><code>--local-processes</code></td><td>양의 정수</td><td>노드별 torchrun worker 수</td></tr><tr><td><code>--mpi</code></td><td><code>none</code>, <code>cray</code>, <code>openmpi</code>, <code>auto</code></td><td>MPI 구성 <br>(Default : auto)</td></tr><tr><td><code>--nccl</code></td><td><code>none</code>, <code>native</code>, <code>ofi</code>, <code>auto</code></td><td>NCCL 전송 구성 <br>(Default : none)</td></tr><tr><td><code>--provider</code></td><td>cxi</td><td>MPI/NCCL OFI Provider <br>(Default : cxi)</td></tr><tr><td><code>-B</code>, <code>--bind</code></td><td><code>SRC:DST:MODE</code></td><td>추가 마운트</td></tr><tr><td><code>--env</code></td><td><code>NAME=VALUE</code></td><td>컨테이너에 전달할 환경 변수</td></tr><tr><td><code>--diagnose</code></td><td>값 없음</td><td>rank 0에서 결정된 설정 출력</td></tr><tr><td><code>--debug-nccl</code></td><td>값 없음</td><td>NCCL 디버그 정보 출력</td></tr><tr><td><code>--doctor</code></td><td>값 없음</td><td>GPU, CXI, OFI 라이브러리 사전 점검</td></tr><tr><td><code>--dry-run</code></td><td>값 없음</td><td>실행하지 않고 최종 명령 출력</td></tr></tbody></table>
+<table data-search="false"><thead><tr><th width="178.07244873046875">옵션</th><th>값</th><th>설명</th></tr></thead><tbody><tr><td><code>--runtime</code></td><td> <code>enroot,apptainer</code></td><td>컨테이너 런타임<br>(Default : enroot)</td></tr><tr><td><code>--workload</code></td><td><code>generic</code>, <code>pytorch-dist*</code></td><td>워크로드 구분 <br>(Default : generic)</td></tr><tr><td><code>--launcher</code></td><td><code>srun-native</code>, <code>torchrun</code></td><td>분산 프로세스 생성 방식** <br>(Default : srun-native)</td></tr><tr><td><code>--local-processes</code></td><td>양의 정수</td><td>노드별 torchrun worker 수</td></tr><tr><td><code>--mpi</code></td><td><code>none</code>, <code>cray</code>, <code>openmpi</code>, <code>auto</code></td><td>MPI 구성 <br>(Default : auto)</td></tr><tr><td><code>--nccl</code></td><td><code>none</code>, <code>native</code>, <code>ofi</code>, <code>auto</code></td><td>NCCL 전송 구성 <br>(Default : none)</td></tr><tr><td><code>--provider</code></td><td>cxi</td><td>MPI/NCCL OFI Provider <br>(Default : cxi)</td></tr><tr><td><code>-B</code>, <code>--bind</code></td><td><code>SRC:DST:MODE</code></td><td>추가 마운트</td></tr><tr><td><code>--env</code></td><td><code>NAME=VALUE</code></td><td>컨테이너에 전달할 환경 변수</td></tr><tr><td><code>--diagnose</code></td><td>값 없음</td><td>rank 0에서 결정된 설정 출력</td></tr><tr><td><code>--debug-nccl</code></td><td>값 없음</td><td>NCCL 디버그 정보 출력</td></tr><tr><td><code>--doctor</code></td><td>값 없음</td><td>GPU, CXI, OFI 라이브러리 사전 점검</td></tr><tr><td><code>--dry-run</code></td><td>값 없음</td><td>실행하지 않고 최종 명령 출력</td></tr></tbody></table>
 
 \***pytorch-dist** : torch.distributed 기반 분산 학습 (DDP, FSDP, DeepSpeed, NeMo/Megatron 등)
 
 \*\***srun-native**는 Slurm이 GPU마다 학습 워커 프로세스를 직접  구동하고, **torchrun**은 노드당 torchrun 에이전트 하나가 그 안에서 학습 워커 프로세스를 구동합니다.
 
+
+
 #### **3) 컨테이너 런타임 별 실행 방법**&#x20;
 
-&#x20;   **a. Singularity/Apptainer, Enroot**
+&#x20;   **a. Enroot**
 
-컨테이너 런타임에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다. 따라서 배치 작업 스크립트에서 srun을 사용하여 실행합니다. 아래  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
+Enroot에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다. 예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일명]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
 
-{% code title="Singularity 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
+{% code title="Enroot 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
+```bash
+
+#!/bin/bash
+#SBATCH --job-name=kc-gpu-enroot
+#SBATCH --partition=normal
+#SBATCH --comment="misc;appl=pytorch"
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
+#SBATCH --exclusive
+#SBATCH --time=00:30:00
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
+
+export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh"
+export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
+
+module purge
+module load enroot/4.2.0
+srun --mpi=none \
+/apps/common/kisti-container/bin/kisti-container \
+  --runtime enroot \
+  "$IMAGE" python3 "$PROGRAM"
+```
+{% endcode %}
+
+
+
+**b. Apptainer**
+
+Apptainer에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다.  따라서 배치 작업 스크립트에서 srun을 사용하여 실행합니다. 아래  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
+
+{% code title="Apptainer 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
 ```bash
 
 #!/bin/bash
@@ -823,45 +832,6 @@ srun --mpi=none \
     "$IMAGE" python3 "$PROGRAM"
 ```
 {% endcode %}
-
-&#x20;   **b. Pyxis**
-
-**Pyxis**에서 kisti-container는 srun 명령을 생성하는 프론트엔드입니다. 배치 작업 스크립트에서 직접 호출합니다.  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일명]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
-
-{% code title="Pyxis 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
-```bash
-
-#!/bin/bash
-#SBATCH --job-name=kc-gpu-pyxis
-#SBATCH --partition=normal
-#SBATCH --comment="misc;appl=pytorch"
-#SBATCH --nodes=1
-#SBATCH --gpus-per-node=1
-#SBATCH --exclusive
-#SBATCH --time=00:30:00
-#SBATCH --output=%x-%j.out
-#SBATCH --error=%x-%j.err
-
-export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh"
-export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
-
-module purge
-module load enroot/4.2.0
-/apps/common/kisti-container/bin/kisti-container \
-  --runtime pyxis \
-  "$IMAGE" python3 "$PROGRAM"
-```
-{% endcode %}
-
-Pyxis에서 다음 형식은 사용하지 않습니다. 이 형식은 이미 생성된 Slurm step 안에서 Pyxis용 새 `srun`을 만들려고 하므로 Wrapper가 **오류**로 **중단**합니다.
-
-```bash
-srun kisti-container --runtime pyxis ...
-```
-
-
-
-<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption><p>런타임 별 kisti-container 실행 방법 및 통신 설정</p></figcaption></figure>
 
 
 
@@ -946,11 +916,11 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 
 **c. 주요 오류 별 조치 방법**
 
-<table data-search="false"><thead><tr><th align="center">오류 또는 현상</th><th align="center">확인 항목</th><th align="center">조치</th></tr></thead><tbody><tr><td align="center">enroot 이미지 마운트 실패<br><sub>[ERROR] Failed to mount: *.sqsh</sub></td><td align="center">enroot 모듈  로드  여부<br><sub>module list</sub> </td><td align="center"><sub>module load enroot/4.2.0</sub> </td></tr><tr><td align="center">Pyxis 실행 에러<br><sub>invoke kisti-container directly</sub></td><td align="center">Pyxis 앞에  <code>srun</code> 사용 여부</td><td align="center"><sub>kisti-container [옵션] 명령어</sub> </td></tr><tr><td align="center">NCCL 통신 플러그인 에러<br><sub>network AWS Libfabric not found</sub></td><td align="center">OFI 모듈 로드 여부<br><sub>module list</sub></td><td align="center"><p><sub>module load aws-ofi-nccl/1.20.0</sub></p><p><sub>module load libfabric/2.3.1</sub></p></td></tr></tbody></table>
+<table data-search="false"><thead><tr><th align="center">오류 또는 현상</th><th align="center">확인 항목</th><th align="center">조치</th></tr></thead><tbody><tr><td align="center">enroot 이미지 마운트 실패<br><sub>[ERROR] Failed to mount: *.sqsh</sub></td><td align="center">enroot 모듈  로드  여부<br><sub>module list</sub> </td><td align="center"><sub>module load enroot/4.2.0</sub> </td></tr><tr><td align="center">NCCL 통신 플러그인 에러<br><sub>network AWS Libfabric not found</sub></td><td align="center">OFI 모듈 로드 여부<br><sub>module list</sub></td><td align="center"><p><sub>module load aws-ofi-nccl/1.20.0</sub></p><p><sub>module load libfabric/2.3.1</sub></p></td></tr></tbody></table>
 
 
 
-## 아. 스케줄러(SLURM)를 통한 작업 실행 예제
+## 바. 스케줄러(SLURM)를 통한 작업 실행 예제
 
 **컨테이너  런타임** 또는 **kisti-container**를 함께 사용하는 Slurm 작업  스크립트를 작성 및 제출하여 계산노드에서 사용자 작업을 실행할 수 있습니다. 아래와 같이 관심 있는 작업 유형의 **예제 디렉터리**와 예제 실행에 필요한 **이미지 파일**을 사용자 작업 공간으로 복사하여 실행해 볼 수 있습니다.
 
@@ -964,7 +934,7 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 07-pytorch-deepspeed  
 </code></pre>
 
-{% code title="이미지 파일 디렉터리 : Enroot(.sqsh), Singularity/Apptainer(.sif)" %}
+{% code title="이미지 파일 디렉터리 : Enroot(.sqsh), Apptainer(.sif)" %}
 ```bash
 - 기본 이미지 : /apps/common/kisti-container/images  
 - Slingshot 고속 네트워크 지원 이미지 : /apps/common/kisti-container/images/slingshot 
@@ -1009,14 +979,14 @@ kisti-container를 사용하는 MPI 작업은 --workload=generic 옵션(기본�
 | CrayMPI | --mpi=cray\_shasta |     --mpi cray     |
 | OpenMPI |     --mpi=pmix     |    --mpi openmpi   |
 
-아래 예제는 2 노드 8 프로세스 환경에서 노드 간 **CPU MPI 통신 성능**을 **측정**합니다. **OMB(OSU Micro-Benchmarks)**&#xC758; 두 가지 측정을 수행하는데, osu\_multi\_lat 는 여러 프로세스 쌍이 동시에 메시지를 주고 받을 때의 지연시간을, osu\_mbw\_mr은 같은 조건에서의 대역폭과 메시지 처리율을 측정합니다.
+아래 예제는 2 노드 8 프로세스 환경에서 Apptainer 컨테이너를 구동하여노드 간 **CPU MPI 통신 성능**을 **측정**합니다. **OMB(OSU Micro-Benchmarks)**&#xC758; 두 가지 측정을 수행하는데, osu\_multi\_lat 는 여러 프로세스 쌍이 동시에 메시지를 주고 받을 때의 지연시간을, osu\_mbw\_mr은 같은 조건에서의 대역폭과 메시지 처리율을 측정합니다.
 
-{% code title="(kisti-container Singularity) MPI OMB(통신성능측정)작업 스크립트 예제" %}
+{% code title="(kisti-container Apptainer) MPI OMB(통신성능측정)작업 스크립트 예제" %}
 ```bash
-## /apps/common/kisti-container/examples/03-mpi-omb/run-gh200-singularity.sbatch
+## /apps/common/kisti-container/examples/03-mpi-omb/run-gh200-apptainer.sbatch
 
 #!/bin/bash
-#SBATCH --job-name=gh200-omb-sing
+#SBATCH --job-name=gh200-omb-apptainer
 #SBATCH --comment="field=misc;appl=misc"
 #SBATCH --partition=normal
 #SBATCH --nodes=2
@@ -1036,23 +1006,23 @@ OMB="/opt/omb/cray-mpich/7.5.2/pt2pt"
 module purge
 module load cray-mpich/9.0.1
 module load libfabric/2.3.1
-module load singularity/4.5.0
+module load apptainer/1.4.5
 
-echo "===== [CrayMPI] GH200 OMB SINGULARITY LATENCY ====="
+echo "===== [CrayMPI] GH200 OMB APPTAINER LATENCY ====="
 srun \
   --mpi=cray_shasta --nodes=2 --ntasks=8 --ntasks-per-node=4 --cpus-per-task=1 \
   --distribution=block:block --cpu-bind=cores \
   "$KC" \
-    --runtime singularity --workload generic --mpi cray \
+    --runtime apptainer --workload generic --mpi cray \
     --provider cxi --diagnose \
     "$IMAGE" "$OMB/osu_multi_lat"
 
-echo "===== [CrayMPI] GH200 OMB SINGULARITY BANDWIDTH ====="
+echo "===== [CrayMPI] GH200 OMB APPTAINER BANDWIDTH ====="
 srun \
   --mpi=cray_shasta --nodes=2 --ntasks=8 --ntasks-per-node=4 --cpus-per-task=1 \
   --distribution=block:block --cpu-bind=cores \
   "$KC" \
-    --runtime singularity --workload generic --mpi cray \
+    --runtime apptainer --workload generic --mpi cray \
     --provider cxi --diagnose \
     "$IMAGE" "$OMB/osu_mbw_mr"
 
@@ -1061,23 +1031,23 @@ OMB="/opt/omb/openmpi/7.5.2/pt2pt"
 module purge
 module load openmpi/5.0.10
 module load libfabric/2.3.1
-module load singularity/4.5.0
+module load apptainer/4.5.0
 
-echo "===== [OpenMPI] GH200 OMB SINGULARITY LATENCY ====="
+echo "===== [OpenMPI] GH200 OMB APPTAINER LATENCY ====="
 srun \
   --mpi=pmix --nodes=2 --ntasks=8 --ntasks-per-node=4 --cpus-per-task=1 \
   --distribution=block:block --cpu-bind=cores \
   "$KC" \
-    --runtime singularity --workload generic --mpi openmpi \
+    --runtime apptainer --workload generic --mpi openmpi \
     --provider cxi --diagnose \
     "$IMAGE" "$OMB/osu_multi_lat"
 
-echo "===== [OpenMPI] GH200 OMB SINGULARITY BANDWIDTH ====="
+echo "===== [OpenMPI] GH200 OMB APPTAINER BANDWIDTH ====="
 srun \
   --mpi=pmix --nodes=2 --ntasks=8 --ntasks-per-node=4 --cpus-per-task=1 \
   --distribution=block:block --cpu-bind=cores \
   "$KC" \
-    --runtime singularity --workload generic --mpi openmpi \
+    --runtime apptainer --workload generic --mpi openmpi \
     --provider cxi --diagnose \
     "$IMAGE" "$OMB/osu_mbw_mr"
 ```
@@ -1085,13 +1055,13 @@ srun \
 
 작업제출:
 
-<pre class="language-bash"><code class="lang-bash"><strong>$ sbatch run-gh200-singularity.sbatch
+<pre class="language-bash"><code class="lang-bash"><strong>$ sbatch run-gh200-apptainer.sbatch
 </strong></code></pre>
 
 결과파일:
 
-<pre class="language-bash"><code class="lang-bash"><strong>$ cat gh200-omb-sing-*.out
-</strong>===== [CrayMPI] GH200 OMB SINGULARITY BANDWIDTH =====
+<pre class="language-bash"><code class="lang-bash"><strong>$ cat gh200-omb-apptainer-*.out
+</strong>===== [CrayMPI] GH200 OMB APPTAINER BANDWIDTH =====
 # OSU MPI Multiple Bandwidth / Message Rate Test v7.5.2
 # [ pairs: 4 ] [ window size: 64 ]
 # Datatype: MPI_CHAR.
@@ -1105,7 +1075,7 @@ srun \
 1048576            192158.82         183256.93
 2097152            193140.30          92096.47
 4194304            193711.29          46184.37
-===== [OpenMPI] GH200 OMB SINGULARITY BANDWIDTH =====
+===== [OpenMPI] GH200 OMB APPTAINER BANDWIDTH =====
 # OSU MPI Multiple Bandwidth / Message Rate Test v7.5.2
 # [ pairs: 4 ] [ window size: 64 ]
 # Datatype: MPI_CHAR.
