@@ -1,5 +1,5 @@
 ---
-description: Podman,  Enroot, Singularity/Apptainer 기반 컨테이너 활용 가이드
+description: Podman,  Enroot, Apptainer 기반 컨테이너 활용 가이드
 layout:
   width: default
   title:
