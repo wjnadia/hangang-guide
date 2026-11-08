@@ -16,8 +16,8 @@
 [slurm.md](slurm.md)
 {% endcontent-ref %}
 
-{% content-ref url="container-1.md" %}
-[container-1.md](container-1.md)
+{% content-ref url="container.md" %}
+[container.md](container.md)
 {% endcontent-ref %}
 
 {% content-ref url="dtn.md" %}
