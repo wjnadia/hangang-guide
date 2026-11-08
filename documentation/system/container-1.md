@@ -204,24 +204,8 @@ $ cat ds-kc-pyxis-1234567.out
   NCCL ver   : (2, 25, 1)
 ============================================================
 <strong>--[중략]--
-</strong>
-  epoch 0 step    0  loss=10.5000
-  epoch 0 step   20  loss=10.5000
-  epoch 0 step   40  loss=10.4375
-  epoch 0 step   60  loss=10.4375
-  epoch 0 step   80  loss=10.4375
-  epoch 0 step  100  loss=10.4375
-  epoch 0 step  120  loss=10.4375
-  epoch 0 step  140  loss=10.4375
-  epoch 0 done  avg_loss=10.4383  time=6.1s  steps=157
-  epoch 1 step    0  loss=10.3750
-  epoch 1 step   20  loss=10.3750
-  epoch 1 step   40  loss=10.3750
-  epoch 1 step   60  loss=10.3750
-  epoch 1 step   80  loss=10.3750
-  epoch 1 step  100  loss=10.3750
-  epoch 1 step  120  loss=10.3750
-  epoch 1 step  140  loss=10.3750
+</strong>  epoch 0 done  avg_loss=10.4383  time=6.1s  steps=157
+--[중략]--
   epoch 1 done  avg_loss=10.3857  time=6.3s  steps=157
 학습 완료
 </code></pre>
