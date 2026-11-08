@@ -190,11 +190,11 @@ ZeRO 최적화로 옵티마이저 상태와 그래디언트를 GPU들에 나눠 
 
 <pre class="language-bash"><code class="lang-bash"><strong>## 배치 작업 제출하기(GH200 GPU 계산노드 2대 할당) 
 </strong><strong>$ cd /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed
-</strong><strong>$ sbatch run-kc-enroot.sbatch
+</strong><strong>$ sbatch run-kc-pyxis.sbatch
 </strong>Submitted batch job 1234567
 
 ## 작업결과 확인하기
-$ cat kc-ds-pyxis-1234567.out
+$ cat ds-kc-pyxis-1234567.out
 ============================================================
   DeepSpeed 분산 학습
   World size : 8
@@ -228,10 +228,10 @@ $ cat kc-ds-pyxis-1234567.out
 
 {% code title="예제 작업 스크립트 파일" %}
 ```bash
-## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/run-kc-enroot.sbatch
+## /scratch/$USER/kisti-container/examples/07-pytorch-deepspeed/run-kc-pyxis.sbatch
 
 #!/bin/bash
-#SBATCH --job-name=kc-ds-enroot
+#SBATCH --job-name=ds-kc-pyxis
 #SBATCH --partition=normal
 #SBATCH --comment="field=misc;appl=deepspeed"
 #SBATCH --nodes=2
@@ -261,9 +261,10 @@ export TRITON_CACHE_DIR=$CACHE_ROOT/triton
 export TORCH_EXTENSIONS_DIR=$CACHE_ROOT/torch_extensions
 export XDG_CACHE_HOME=$CACHE_ROOT/xdg
 
-srun \
+## kisti-conatiner Wrapper를 사용하여 Enroot 컨테이너에서 병렬학습 예제 실행  
+## pyxis : Enroot 컨테이너 런타임을 위한 Slurm 스케줄러 플러그인
   "${KC}" \
-    --runtime enroot --workload pytorch-dist \
+    --runtime pyxis --workload pytorch-dist \
     --launcher torchrun --local-processes 4 --nccl ofi \
     --diagnose \
     "$IMAGE" "$TRAIN_SCRIPT" --deepspeed --deepspeed_config ${SLURM_SUBMIT_DIR}/ds_config.json --epochs 2
@@ -727,7 +728,7 @@ GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.03
 &#x20;**Apptainer 참고 자료**
 
 * [Apptainer 공식 사용자 가이드](https://apptainer.org/docs/user/main/introduction.html)
-* [뉴론 Singularity 컨테이너 사용자 지침서](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container)
+* [뉴론 Singularity 컨테이너 사용자 지침서](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container)&#x20;
 {% endhint %}
 
 {% hint style="info" %}
@@ -746,7 +747,7 @@ $ podman run --rm --device nvidia.com/gpu=0 \
 
 ### 3. kisti-container&#x20;
 
-kisti-container는 컨테이너 런타임을 감싸는 실행 래퍼로 **Slingshot을 지원하지 않는 이미지를 실행할 때 사용**할 수 있습니다. **MPI**나 **분산 학습 작업**을 컨테이너에서 실행할 때 필요한 설정\*을 자동으로 처리합니다. Enroot, Apptainer를 지원하며, 노드의 CPU 아키텍처와 로드된 모듈을 보고 필요한 설정을 자동으로 선택합니다.
+kisti-container는 컨테이너 런타임을 감싸는 실행 래퍼로 **Slingshot을 지원하지 않는 이미지를 실행할 때 사용**할 수 있습니다. **MPI**나 **분산 학습 작업**을 컨테이너에서 실행할 때 필요한 설정\*을 자동으로 처리합니다. Enroot(Pyxis), Apptainer/Singularity를 지원하며, 노드의 CPU 아키텍처와 로드된 모듈을 보고 필요한 설정을 자동으로 선택합니다.
 
 \***Slingshot** 네트워크 라이브러리 연결, **NCCL** 통신 플러그인 지정, **분산 환경변수** 지정
 
@@ -761,7 +762,7 @@ $ kisti-container --help
 
 #### **2) 주요 옵션**
 
-<table data-search="false"><thead><tr><th width="178.07244873046875">옵션</th><th>값</th><th>설명</th></tr></thead><tbody><tr><td><code>--runtime</code></td><td> <code>enroot,apptainer</code></td><td>컨테이너 런타임<br>(Default : enroot)</td></tr><tr><td><code>--workload</code></td><td><code>generic</code>, <code>pytorch-dist*</code></td><td>워크로드 구분 <br>(Default : generic)</td></tr><tr><td><code>--launcher</code></td><td><code>srun-native</code>, <code>torchrun</code></td><td>분산 프로세스 생성 방식** <br>(Default : srun-native)</td></tr><tr><td><code>--local-processes</code></td><td>양의 정수</td><td>노드별 torchrun worker 수</td></tr><tr><td><code>--mpi</code></td><td><code>none</code>, <code>cray</code>, <code>openmpi</code>, <code>auto</code></td><td>MPI 구성 <br>(Default : auto)</td></tr><tr><td><code>--nccl</code></td><td><code>none</code>, <code>native</code>, <code>ofi</code>, <code>auto</code></td><td>NCCL 전송 구성 <br>(Default : none)</td></tr><tr><td><code>--provider</code></td><td>cxi</td><td>MPI/NCCL OFI Provider <br>(Default : cxi)</td></tr><tr><td><code>-B</code>, <code>--bind</code></td><td><code>SRC:DST:MODE</code></td><td>추가 마운트</td></tr><tr><td><code>--env</code></td><td><code>NAME=VALUE</code></td><td>컨테이너에 전달할 환경 변수</td></tr><tr><td><code>--diagnose</code></td><td>값 없음</td><td>rank 0에서 결정된 설정 출력</td></tr><tr><td><code>--debug-nccl</code></td><td>값 없음</td><td>NCCL 디버그 정보 출력</td></tr><tr><td><code>--doctor</code></td><td>값 없음</td><td>GPU, CXI, OFI 라이브러리 사전 점검</td></tr><tr><td><code>--dry-run</code></td><td>값 없음</td><td>실행하지 않고 최종 명령 출력</td></tr></tbody></table>
+<table data-search="false"><thead><tr><th width="178.07244873046875">옵션</th><th>값</th><th>설명</th></tr></thead><tbody><tr><td><code>--runtime</code></td><td> <code>pyxis,enroot,apptainer, singularity</code></td><td>컨테이너 런타임<br>(Default : pyxis)</td></tr><tr><td><code>--workload</code></td><td><code>generic</code>, <code>pytorch-dist*</code></td><td>워크로드 구분 <br>(Default : generic)</td></tr><tr><td><code>--launcher</code></td><td><code>srun-native</code>, <code>torchrun</code></td><td>분산 프로세스 생성 방식** <br>(Default : srun-native)</td></tr><tr><td><code>--local-processes</code></td><td>양의 정수</td><td>노드별 torchrun worker 수</td></tr><tr><td><code>--mpi</code></td><td><code>none</code>, <code>cray</code>, <code>openmpi</code>, <code>auto</code></td><td>MPI 구성 <br>(Default : auto)</td></tr><tr><td><code>--nccl</code></td><td><code>none</code>, <code>native</code>, <code>ofi</code>, <code>auto</code></td><td>NCCL 전송 구성 <br>(Default : none)</td></tr><tr><td><code>--provider</code></td><td>cxi</td><td>MPI/NCCL OFI Provider <br>(Default : cxi)</td></tr><tr><td><code>-B</code>, <code>--bind</code></td><td><code>SRC:DST:MODE</code></td><td>추가 마운트</td></tr><tr><td><code>--env</code></td><td><code>NAME=VALUE</code></td><td>컨테이너에 전달할 환경 변수</td></tr><tr><td><code>--diagnose</code></td><td>값 없음</td><td>rank 0에서 결정된 설정 출력</td></tr><tr><td><code>--debug-nccl</code></td><td>값 없음</td><td>NCCL 디버그 정보 출력</td></tr><tr><td><code>--doctor</code></td><td>값 없음</td><td>GPU, CXI, OFI 라이브러리 사전 점검</td></tr><tr><td><code>--dry-run</code></td><td>값 없음</td><td>실행하지 않고 최종 명령 출력</td></tr></tbody></table>
 
 \***pytorch-dist** : torch.distributed 기반 분산 학습 (DDP, FSDP, DeepSpeed, NeMo/Megatron 등)
 
@@ -771,41 +772,11 @@ $ kisti-container --help
 
 #### **3) 컨테이너 런타임 별 실행 방법**&#x20;
 
-&#x20;   **a. Enroot**
+&#x20; &#x20;
 
-Enroot에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다. 예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일명]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
+**a. Enroot, Singularity/Apptainer**
 
-{% code title="Enroot 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
-```bash
-
-#!/bin/bash
-#SBATCH --job-name=kc-gpu-enroot
-#SBATCH --partition=normal
-#SBATCH --comment="misc;appl=pytorch"
-#SBATCH --nodes=1
-#SBATCH --gpus-per-node=1
-#SBATCH --exclusive
-#SBATCH --time=00:30:00
-#SBATCH --output=%x-%j.out
-#SBATCH --error=%x-%j.err
-
-export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh"
-export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
-
-module purge
-module load enroot/4.2.0
-srun --mpi=none \
-/apps/common/kisti-container/bin/kisti-container \
-  --runtime enroot \
-  "$IMAGE" python3 "$PROGRAM"
-```
-{% endcode %}
-
-
-
-**b. Apptainer**
-
-Apptainer에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다.  따라서 배치 작업 스크립트에서 srun을 사용하여 실행합니다. 아래  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
+Enroot, Singularity/Apptainer에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다.  따라서 배치 작업 스크립트에서 srun을 사용하여 실행합니다. 아래  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
 
 {% code title="Apptainer 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
 ```bash
@@ -825,15 +796,50 @@ export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sif"
 export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
 
 module purge
-module load singularity/4.5.0
+module load apptainer/1.4.5
 srun --mpi=none \
   /apps/common/kisti-container/bin/kisti-container \
-    --runtime singularity \
+    --runtime apptainer \
     "$IMAGE" python3 "$PROGRAM"
 ```
 {% endcode %}
 
+&#x20;**b. Pyxis**
 
+Pyxis에서 kisti-container는 srun 명령을 생성하는 프론트엔드입니다. 배치 작업 스크립트에서 직접 호출합니다.  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일명]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
+
+Pyxis에서 다음 형식은 사용하지 않습니다. 이 형식은 이미 생성된 Slurm step 안에서 Pyxis용 새 `srun`을 만들려고 하므로 Wrapper가 **오류**로 **중단**합니다.
+
+```bash
+srun kisti-container --runtime pyxis ...
+```
+
+{% code title="Pyxis 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
+```bash
+
+#!/bin/bash
+#SBATCH --job-name=kc-gpu-pyxis
+#SBATCH --partition=normal
+#SBATCH --comment="misc;appl=pytorch"
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
+#SBATCH --exclusive
+#SBATCH --time=00:30:00
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
+
+export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh"
+export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
+
+module purge
+module load enroot/4.2.0
+/apps/common/kisti-container/bin/kisti-container \
+  --runtime pyxis \
+  "$IMAGE" python3 "$PROGRAM
+```
+{% endcode %}
+
+<figure><img src="../.gitbook/assets/image (1).png" alt=""><figcaption><p>런타임 별 kisti-container 실행 방법 및 통신 설정</p></figcaption></figure>
 
 #### **4) 다중 노드 통신 환경 점검**
 
@@ -916,7 +922,7 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 
 **c. 주요 오류 별 조치 방법**
 
-<table data-search="false"><thead><tr><th align="center">오류 또는 현상</th><th align="center">확인 항목</th><th align="center">조치</th></tr></thead><tbody><tr><td align="center">enroot 이미지 마운트 실패<br><sub>[ERROR] Failed to mount: *.sqsh</sub></td><td align="center">enroot 모듈  로드  여부<br><sub>module list</sub> </td><td align="center"><sub>module load enroot/4.2.0</sub> </td></tr><tr><td align="center">NCCL 통신 플러그인 에러<br><sub>network AWS Libfabric not found</sub></td><td align="center">OFI 모듈 로드 여부<br><sub>module list</sub></td><td align="center"><p><sub>module load aws-ofi-nccl/1.20.0</sub></p><p><sub>module load libfabric/2.3.1</sub></p></td></tr></tbody></table>
+<table data-search="false"><thead><tr><th align="center">오류 또는 현상</th><th align="center">확인 항목</th><th align="center">조치</th></tr></thead><tbody><tr><td align="center">enroot 이미지 마운트 실패<br><sub>[ERROR] Failed to mount: *.sqsh</sub></td><td align="center">enroot 모듈  로드  여부<br><sub>module list</sub> </td><td align="center"><sub>module load enroot/4.2.0</sub> </td></tr><tr><td align="center">Pyxis 실행 에러<br><sub>invoke kisti-container directly</sub></td><td align="center">Pyxis 앞에  <code>srun</code> 사용 여부</td><td align="center"><sub>kisti-container [옵션] 명령어</sub> </td></tr><tr><td align="center">NCCL 통신 플러그인 에러<br><sub>network AWS Libfabric not found</sub></td><td align="center">OFI 모듈 로드 여부<br><sub>module list</sub></td><td align="center"><p><sub>module load aws-ofi-nccl/1.20.0</sub></p><p><sub>module load libfabric/2.3.1</sub></p></td></tr></tbody></table>
 
 
 
@@ -965,6 +971,8 @@ AI 관련 참고 자료는 **한강 지침서 > 소프트웨어**에서 아래 �
 * [**Pytorch**](https://docs-ksc.gitbook.io/hangang-user-guide/software/pytorch)
 * [**NCCL 활용 및 Slingshot 연동**](https://docs-ksc.gitbook.io/hangang-user-guide/software/nccl-slingshot)&#x20;
 {% endhint %}
+
+
 
 ### **1.  kisti-container MPI 작업**
 
@@ -1031,7 +1039,7 @@ OMB="/opt/omb/openmpi/7.5.2/pt2pt"
 module purge
 module load openmpi/5.0.10
 module load libfabric/2.3.1
-module load apptainer/4.5.0
+module load apptainer/1.4.5
 
 echo "===== [OpenMPI] GH200 OMB APPTAINER LATENCY ====="
 srun \
@@ -1162,7 +1170,7 @@ srun --mpi=none --kill-on-bad-exit=1 --distribution=block:block \
 ```bash
 
 #!/bin/bash
-#SBATCH --job-name=kc-ddp-pyxis
+#SBATCH --job-name=ddp-kc-pyxis
 #SBATCH --partition=normal
 #SBATCH --comment="field=sciai;appl=pytorch-ddp"
 #SBATCH --nodes=2
@@ -1206,7 +1214,7 @@ module load enroot/4.2.0
 결과 파일:
 
 ```bash
-$ cat ddp-pyxis-*.out (kc-ddp-pyxis-*.out)
+$ cat ddp-pyxis-*.out (ddp-kc-pyxis-*.out)
 --[중략]--
 DDP_RANK_PASS rank=7 host=gpu0015 gpu=3
 DDP_RANK_PASS rank=0 host=gpu0014 gpu=0
@@ -1217,7 +1225,7 @@ DDP_RANK_PASS rank=1 host=gpu0014 gpu=1
 DDP_RANK_PASS rank=6 host=gpu0015 gpu=2
 DDP_RANK_PASS rank=5 host=gpu0015 gpu=1
 
-$ cat checkpoints/ddp-pyxis-*(kc-ddp-pyxis-*)/ddp-smoke-result.json
+$ cat checkpoints/ddp-pyxis-*(ddp-kc-pyxis-*)/ddp-smoke-result.json
 {
   "status": "PASS",
   "world_size": 8,
@@ -1347,7 +1355,7 @@ srun --mpi=none --kill-on-bad-exit=1 --distribution=block:block \
 ```bash
 
 #!/bin/bash
-#SBATCH --job-name=kc-nemo-pyxis
+#SBATCH --job-name=nemo-kc-pyxis
 #SBATCH --partition=normal
 #SBATCH --comment="field=misc;appl=megatron-lm"
 #SBATCH --nodes=2
@@ -1364,7 +1372,7 @@ KC="/apps/common/kisti-container/bin/kisti-container"
 IMAGE="$ROOT/images/nemo-25.04.00-aarch64.sqsh"
 TRAIN_SCRIPT="$ROOT/examples/06-nemo-megatron/nemo_megatron_tp4_dp2_smoke.py"
 
-CHECKPOINT_DIR=${SLURM_SUBMIT_DIR}/checkpoints/kc-nemo-pyxis-${SLURM_JOB_ID}
+CHECKPOINT_DIR=${SLURM_SUBMIT_DIR}/checkpoints/nemo-kc-pyxis-${SLURM_JOB_ID}
 mkdir -p "$CHECKPOINT_DIR"
 export CUDA_DEVICE_MAX_CONNECTIONS=${CUDA_DEVICE_MAX_CONNECTIONS:-1}
 
@@ -1392,7 +1400,7 @@ $ sbatch run-kc-pyxis.sbatch (kisti-container 사용)
 결과 파일:
 
 ```bash
-$ cat nemo-pyxis-*.out (kc-nemo-pyxis-*.out)
+$ cat nemo-pyxis-*.out (nemo-kc-pyxis-*.out)
 --[중략]--
 NEMO_MCORE_TPDP_RESULT status=PASS world_size=8 tp_size=4 dp_size=2 steps=5 last_dp_loss_avg=8.43100882 mean_step_ms=395.784 steady_mean_step_ms=49.037 collective=28.0 expected=28.0
 ```
@@ -1400,7 +1408,7 @@ NEMO_MCORE_TPDP_RESULT status=PASS world_size=8 tp_size=4 dp_size=2 steps=5 last
 통신 설정을 확인하려면 주석 처리된 `NCCL_DEBUG` 두 줄을 해제하고 실행한 뒤, 출력에서 다음을 확인하시기 바랍니다.
 
 ```bash
-grep -E 'Selected provider|Using network' nemo-pyxis-*.out(kc-nemo-pyxis-*.out) | sort -u
+grep -E 'Selected provider|Using network' nemo-pyxis-*.out(nemo-kc-pyxis-*.out) | sort -u
 ```
 
 `Selected provider is cxi`가 나오면 Slingshot을 사용하는 것이고, `Using network Socket`이면 일반 TCP로 동작하는 상태라 성능이 크게 떨어집니다.
@@ -1479,7 +1487,7 @@ NeMo 예제와 동일한 구조입니다. 캐시 환경변수는 kisit-container
 ```bash
 
 #!/bin/bash
-#SBATCH --job-name=kc-ds-pyxis
+#SBATCH --job-name=ds-kc-pyxis
 #SBATCH --partition=normal
 #SBATCH --comment="field=misc;appl=deepspeed"
 #SBATCH --nodes=2
@@ -1526,7 +1534,7 @@ $ sbatch run-kc-pyxis.sbatch (kisti-container 사용)
 결과 파일:
 
 ```bash
-$ cat ds-pyxis-*.out (kc-ds-pyxis-*.out)
+$ cat ds-pyxis-*.out (ds-kc-pyxis-*.out)
 --[중략]--
   epoch 0 step    0  loss=10.5625
   epoch 0 step   20  loss=10.5000
