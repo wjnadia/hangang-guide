@@ -1,6 +1,5 @@
 ---
 description: Podman,  Enroot, Singularity/Apptainer 기반 컨테이너 활용 가이드
-hidden: true
 layout:
   width: default
   title:
@@ -23,7 +22,7 @@ layout:
     visible: true
 ---
 
-# 컨테이너 V.2 (작성중)
+# 컨테이너
 
 ## 가. 개요
 
