@@ -1,5 +1,6 @@
 ---
 description: Podman,  Enroot, Singularity/Apptainer 기반 컨테이너 활용 가이드
+hidden: true
 layout:
   width: default
   title:
@@ -461,11 +462,16 @@ $ podman login myhub.ksc.re.kr
 ```
 {% endcode %}
 
-1\) [**myhub**](https://myhub.ksc.re.kr/)에 로그인하여 **새 프로젝트**를 생성하고 액세스 레벨(공개/비공개)을 설정합니다.&#x20;
+
+
+* **사용자 프로젝트 생성 및 CLI 시크릿 복사**
+
+\
+[**myhub**](https://myhub.ksc.re.kr/)에 로그인하여 **새 프로젝트**를 생성하고 액세스 레벨(공개/비공개)을 설정합니다.&#x20;
 
 <div data-with-frame="true"><figure><img src="../.gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure></div>
 
-2\) myhub 대시 보드 상단 오른편의 사용자 ID를 클릭하여 사용자 프로필 메뉴를 선택하고, **CLI 시크릿**을 **복사**합니다.
+myhub 대시 보드 상단 오른편의 사용자 ID를 클릭하여 사용자 프로필 메뉴를 선택하고, **CLI 시크릿**을   **복사**합니다.
 
 <div data-with-frame="true"><figure><img src="../.gitbook/assets/image (15).png" alt="" width="375"><figcaption></figcaption></figure></div>
 {% endtab %}
@@ -545,7 +551,7 @@ $ enroot create -n pytorch-deepspeed-aarch64 pytorch-deepspeed-aarch64.sqsh
 {% hint style="info" %}
 **Enroot 이미지 관련 명령어**&#x20;
 
-<table data-header-hidden><thead><tr><th width="86.020263671875" align="center"></th><th width="140.97393798828125" align="center"></th><th></th></tr></thead><tbody><tr><td align="center"><strong>단계</strong></td><td align="center"><strong>작업 내용</strong></td><td><strong>명령어 / 설정 예시</strong></td></tr><tr><td align="center"><strong>이미지 가져오기</strong></td><td align="center"><sub>Docker Hub 및 myhub 등</sub>  <br><sub>외부 레지스트리에서 직접 가져오기</sub></td><td><p><sub>$ enroot import -o my_pytorch-v1.sqsh docker://[Username]/my_pytorch:v1</sub></p><p></p><p><sub>$ enroot import -o my_pytorch-v1.sqsh docker://myhub.ksc.re.kr/[프로젝트명]/ubuntu:latest</sub></p></td></tr><tr><td align="center"><strong>컨테이너 생성</strong></td><td align="center"><sub>rootfs</sub><br><sub>(unpacked</sub> <br><sub>디렉터리)</sub> <br><sub>생성하기</sub></td><td><p><sub>$ enroot create -n my_pytorch-v1</sub><sup><sub>*</sub></sup><sub> my_pytorch-v1.sqsh</sub>     </p><p><sup><sub>*</sub></sup><sub> 컨테이너(rootfs)는 enroot info 명령어를 사용하여 <code>ENROOT_DATA_PATH</code>에서 확인할 수 있습니다.</sub> </p></td></tr><tr><td align="center"><strong>컨테이너</strong> <br><strong>리스트</strong></td><td align="center"><sub>enroot create</sub> <br><sub>명령어로 생성한</sub> <br><sub>컨테이너 목록 출력</sub></td><td><p><sub>$ enroot list</sub><sup><sub>*</sub></sup> </p><p><sup><sub>*</sub></sup><sub>컨테이너를 생성한 노드에서만 출력됨</sub></p></td></tr><tr><td align="center"><strong>컨테이너 삭제</strong></td><td align="center"><sub>enroot create</sub> <br><sub>명령어로 생성한</sub> <br><sub>컨테이너 제거</sub></td><td><p><sub>$ enroot remove my_pytorch-v1</sub><sup><sub>*</sub></sup></p><p><sup><sub>*</sub></sup><sub>컨테이너를 생성한 노드에서만 제거할 수 있음</sub></p></td></tr></tbody></table>
+<table data-header-hidden><thead><tr><th width="86.020263671875" align="center"></th><th width="140.97393798828125" align="center"></th><th></th></tr></thead><tbody><tr><td align="center"><strong>단계</strong></td><td align="center"><strong>작업 내용</strong></td><td><strong>명령어 / 설정 예시</strong></td></tr><tr><td align="center"><strong>이미지</strong> <br><strong>가져오기</strong></td><td align="center"><sub>Docker Hub 및 myhub 등</sub>  <br><sub>외부 레지스트리에서 직접 가져오기</sub></td><td><p><sub>$ enroot import -o my_pytorch-v1.sqsh docker://[Username]/my_pytorch:v1</sub></p><p></p><p><sub>$ enroot import -o my_pytorch-v1.sqsh docker://myhub.ksc.re.kr/[프로젝트명]/ubuntu:latest</sub></p></td></tr><tr><td align="center"><strong>컨테이너 생성</strong></td><td align="center"><sub>rootfs</sub><br><sub>(unpacked</sub> <br><sub>디렉터리)</sub> <br><sub>생성하기</sub></td><td><p><sub>$ enroot create -n my_pytorch-v1</sub><sup><sub>*</sub></sup><sub> my_pytorch-v1.sqsh</sub>     </p><p><sup><sub>*</sub></sup><sub> 컨테이너(rootfs)는 enroot info 명령어를 사용하여 <code>ENROOT_DATA_PATH</code>에서 확인할 수 있습니다.</sub> </p></td></tr><tr><td align="center"><strong>컨테이너</strong> <br><strong>리스트</strong></td><td align="center"><sub>enroot create</sub> <br><sub>명령어로 생성한</sub> <br><sub>컨테이너 목록 출력</sub></td><td><p><sub>$ enroot list</sub><sup><sub>*</sub></sup> </p><p><sup><sub>*</sub></sup><sub>컨테이너를 생성한 노드에서만 출력됨</sub></p></td></tr><tr><td align="center"><strong>컨테이너 삭제</strong></td><td align="center"><sub>enroot create</sub> <br><sub>명령어로 생성한</sub> <br><sub>컨테이너 제거</sub></td><td><p><sub>$ enroot remove my_pytorch-v1</sub><sup><sub>*</sub></sup></p><p><sup><sub>*</sub></sup><sub>컨테이너를 생성한 노드에서만 제거할 수 있음</sub></p></td></tr></tbody></table>
 {% endhint %}
 
 

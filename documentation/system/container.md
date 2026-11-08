@@ -607,7 +607,7 @@ srun --mpi=none \
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.err
 
-export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sif"
+export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh"
 export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
 
 module purge
