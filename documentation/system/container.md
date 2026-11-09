@@ -106,7 +106,7 @@ srun \
 
 ### **2. 사용자 이미지 빌드 후 실행하기**
 
-아래 예제는 먼저 Podman을 사용하여 Pytorch NGC 이미지를 베이스로 **DeepSpeed**가 포함된 사용자 이미지를 빌드하고 **Enroot 이미지 파일**로 변환합니다. **kisti-container**(컨테이너 런타임Wrapper, Slingshot 고속 네트워크 기반 NCCL 환경 구성)를 사용하여 DeepSpeed 기반 멀티 노드 분산 훈련 프로그램을 GPU 계산노드에서 실행합니다.&#x20;
+아래 예제는 먼저 Podman을 사용하여 Pytorch NGC 이미지를 베이스로 **DeepSpeed**가 포함된 사용자 이미지를 빌드하고 **Enroot 이미지 파일**로 변환합니다. **kisti-container**(컨테이너 런타임 Wrapper, Slingshot 고속 네트워크 기반 NCCL 환경 구성)를 사용하여 DeepSpeed 기반 멀티 노드 분산 훈련 프로그램을 GPU 계산노드에서 실행합니다.&#x20;
 
 #### **1) 예제 복사하기**
 
@@ -266,7 +266,9 @@ Podman은 Dockerfile 기반으로 이미지를 만들고 레지스트리에 올�
 
 Enroot과 Apptainer는 실행 측면에서 같은 일을 하며 이미지 형식만 다릅니다(.sqsh/.sif). 한강에서는 Slurm 연동과 GPU 최적화를 위해 Enroot을 권장하며, 기존 누리온·뉴론에서 사용하던 .sif 이미지를 활용하실 경우에는 Apptainer를 사용하면 됩니다.
 
-Slingshot 고속 네트워크를 지원하는 Pytorch/NeMo 이미지를 다음 경로에 제공합니다. **/apps/common/kisti-container/images/slingshot**&#x20;
+Slingshot 고속 네트워크를 지원하는 Pytorch/NeMo 이미지를 다음 경로에 제공합니다.&#x20;
+
+**/apps/common/kisti-container/images/slingshot**&#x20;
 
 다중 노드 GPU 학습에는 이 이미지 또는 이를 기반으로 만든 사용자 이미지를 권장합니다.
 
@@ -275,7 +277,7 @@ Slingshot 고속 네트워크를 지원하는 Pytorch/NeMo 이미지를 다음 �
 {% hint style="info" %}
 * **Podman** : 일반 사용자 권한 기반의 이미지 빌드 및 관리 도구입니다. Docker를 대체하여 이미지를 생성할 때 사용합니다.
 * **Enroot** : NVIDIA에서 개발한 HPC 전용 런타임으로 .sqsh 이미지를 실행합니다. Enroot을 Slurm에서 바로 실행할 수 있게 해주는 스케줄러 플러그인으로 Pyxis를 제공합니다.&#x20;
-* **Apptainer** : HPC 환경에 최적화된 컨테이너 도구로 .sif 이미지를 실행합니다. Singularity에서 분리되어 발전한 오픈소스 컨테이너 런타임으로, 대부분의 이미지 형식과 사용 방식이 서로호환됩니다.
+* **Apptainer** : HPC 환경에 최적화된 컨테이너 도구로 .sif 이미지를 실행합니다. Singularity에서 분리되어 발전한 오픈소스 컨테이너 런타임으로, 대부분의 이미지 형식과 사용 방식이 서로 호환됩니다.
 * **kisti-container** : Enroot 또는 Apptainer로 실행할 때 MPI나 분산 학습 작업에 필요한 호스트의 Slingshot 통신 환경을 연계하도록 돕는 Wrapper 입니다.
 {% endhint %}
 
