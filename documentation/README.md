@@ -41,8 +41,8 @@ layout:
 [slurm.md](system/slurm.md)
 {% endcontent-ref %}
 
-{% content-ref url="system/container-1.md" %}
-[container-1.md](system/container-1.md)
+{% content-ref url="system/container.md" %}
+[container.md](system/container.md)
 {% endcontent-ref %}
 
 {% content-ref url="system/user-support.md" %}
