@@ -764,9 +764,9 @@ $ kisti-container --help
 
 &#x20; &#x20;
 
-**a. Enroot, Singularity/Apptainer**
+**a. Enroot, Apptainer**
 
-Enroot, Singularity/Apptainer에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다.  따라서 배치 작업 스크립트에서 srun을 사용하여 실행합니다. 아래  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
+Enroot, Apptainer에서 kisti-container는  Slurm task 안에서 실행되는 Wrapper 프로그램입니다.  따라서 배치 작업 스크립트에서 srun을 사용하여 실행합니다. 아래  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
 
 {% code title="Apptainer 기반의 kisti-container 실행 위한 배치 작업 스크립트 예시" %}
 ```bash
