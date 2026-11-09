@@ -308,8 +308,8 @@ $ exit                # 로그아웃 후 다시 로그인
 사용자 소스 코드나 특정 라이브러리를 포함한 커스텀 이미지를 생성합니다.
 
 ```bash
-## 현재 디렉터리(.)의 Dockerfile.pytorch로 'pytorch:deepspeed-aarch64' 이미지 빌드
-$ podman build -t pytorch:deepspeed-aarch64 -f Dockerfile.pytorch .
+## 현재 디렉터리(.)의 Dockerille.pytorch_deepspeed로 'pytorch:deepspeed-aarch64' 이미지 빌드
+$ podman build -t pytorch:deepspeed-aarch64 -f Dockerille.pytorch_deepspeed .
 $ podman images
 REPOSITORY                       TAG                IMAGE ID      CREATED         SIZE
 localhost/pytorch                deepspeed-aarch64  5e7a4783117b  21 minutes ago  22.1 GB
@@ -333,7 +333,7 @@ localhost/pytorch:deepspeed-aarch64        deepspeed-aarch64       5e7a4783117b 
 nvcr.io/nvidia/pytorch                     25.03-py3               b9d9faba9659  19 months ago  22 GB
 ```
 
-{% code title="[ Dockerfile 예시 : Dockerfile.pytorch ]" %}
+{% code title="[ Dockerfile 예시 : Dockerille.pytorch_deepspeed ]" %}
 ```bash
 # 베이스 이미지 지정 (slingshot 고속 네트워크를 지원하는 KISTI 제공 pytorch 이미지)
 ARG BASE_IMAGE=myhub.ksc.re.kr/kisti-container/kisti-pytorch:25.03-gh200-r1-aarch64
@@ -413,7 +413,7 @@ $ . /apps/common/podman/podman-init.sh
 # csh/tcsh 쉘 사용자는 podman-init.csh 스크립트 실행
 $ source /apps/common/podman/podman-init.csh 
 
-$ podman build -t pytorch:deepspeed-aarch64 -f Dockerfile.pytorch .
+$ podman build -t pytorch:deepspeed-aarch64 -f Dockerille.pytorch_deepspeed .
 $ podman images
 ```
 {% endhint %}
