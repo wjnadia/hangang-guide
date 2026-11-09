@@ -137,7 +137,7 @@ $ salloc --partition=normal --comment="field=misc;appl=pytorch" --nodes=1 --gpus
 $ echo $SHELL 
 /bin/bash 
 # bash/zsh/ksh 쉘 사용자는 podman-init.sh 스크립트 실행
-$ source /apps/common/podman/podman-init.sh  
+$ . /apps/common/podman/podman-init.sh  
 # csh/tcsh 쉘 사용자는 podman-init.csh 스크립트 실행
 $ source /apps/common/podman/podman-init.csh 
 
@@ -408,7 +408,7 @@ $ echo $SHELL
 /bin/bash 
 
 # bash/zsh/ksh 쉘 사용자는 podman-init.sh 스크립트 실행
-$ source /apps/common/podman/podman-init.sh  
+$ . /apps/common/podman/podman-init.sh  
 
 # csh/tcsh 쉘 사용자는 podman-init.csh 스크립트 실행
 $ source /apps/common/podman/podman-init.csh 
