@@ -643,18 +643,17 @@ x86_64
 
 <pre class="language-bash"><code class="lang-bash"><strong>## Podman
 </strong>## exec format error가 발생하면 이미지와 계산 노드의 아키텍처를 먼저 비교합니다. 
-<strong>$ podman image inspect myhub.ksc.re.kr/wjnadia/pytorch:25.03-py3-aarch64 --format '{{.Architecture}}'
+<strong>$ podman image inspect myhub.ksc.re.kr/support/pytorch:deepspeed-aarch64 --format '{{.Architecture}}'
 </strong>arm64
 
 ## Enroot
 $ module load enroot/4.2.0
-$ enroot create -n pytorch-25.03-py3-aarch64 pytorch-25.03-py3-aarch64.sqsh
-$ enroot start pytorch-25.03-py3-aarch64 uname -m
+$ enroot start pytorch-deepspeed-aarch64.sqsh uname -m
 aarch64
 
 ## Apptainer
 $ module load apptainer/1.4.5
-$ apptainer inspect --labels pytorch-25.03-py3-x86_64.sif | grep build-arch
+$ apptainer inspect --labels pytorch-deepspeed-aarch64.sif | grep build-arch
 org.label-schema.build-arch: amd64   
 </code></pre>
 
