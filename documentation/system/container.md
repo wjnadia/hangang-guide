@@ -643,7 +643,7 @@ x86_64
 
 <pre class="language-bash"><code class="lang-bash"><strong>## Podman
 </strong>## exec format error가 발생하면 이미지와 계산 노드의 아키텍처를 먼저 비교합니다. 
-<strong>$ podman image inspect myhub.ksc.re.kr/support/pytorch:deepspeed-aarch64 --format '{{.Architecture}}'
+<strong>$ podman image inspect myhub.ksc.re.kr/[프로젝트명]/pytorch:deepspeed-aarch64 --format '{{.Architecture}}'
 </strong>arm64
 
 ## Enroot
@@ -661,9 +661,11 @@ org.label-schema.build-arch: amd64
 
 ## 마. 이미지 실행
 
-생성된 이미지는 **Enroot** 또는 **Apptainer** 환경에 배포하여 실행할 수 있습니다. 아래 예시는 **slurm 대화식 작업**으로 스케줄러가 할당한 **계산 노드**에서 각  **컨테이너 런타임 별** **이미지 실행 예시** 입니다. &#x20;
+생성된 이미지는 **Enroot(Pyxis)** 또는 **Apptainer** 환경에 배포하여 실행할 수 있습니다.&#x20;
 
-### 1. Enroot
+### 1. Enroot(Pyxis)
+
+아래 예시는 slurm 대화식 작업으로 스케줄러가 할당한 계산 노드에서 Enroot 이미지 실행 예시 입니다. &#x20;
 
 ```bash
 # GPU 계산 노드에서 squashFS 이미지 파일을 로드하고 실행
@@ -674,8 +676,7 @@ $ salloc --partition=normal --comment="field=misc;appl=pytorch" --nodes=1 --gpus
 $ export IMAGE="/apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh"
 $ export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.py"
 $ module load enroot/4.2.0
-$ enroot create -n pytorch-25.03-py3-aarch64 "$IMAGE"
-$ enroot start pytorch-25.03-py3-aarch64 python3 "$PROGRAM"
+$ enroot start "$IMAGE" "$PROGRAM"
 GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.039116
 
 # Pyxis는 Enroot의 slurm 플러그인으로 enroot 명령어 없이 이미지 및 마운트 경로 등을 
@@ -699,9 +700,10 @@ GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.03
 
 ### 2. Apptainer
 
-```bash
-# GPU 계산노드에서 Apptainer 이미지를 로드하여 실행
-# --nv: GPU 가속 연동 옵션 필수
+아래 예시는 slurm 대화식 작업으로 스케줄러가 할당한 계산 노드에서 Apptainer 이미지 실행 예시 입니다.&#x20;
+
+<pre class="language-bash"><code class="lang-bash"><strong># GPU 계산노드에서 Apptainer 이미지를 로드하여 실행
+</strong># --nv: GPU 가속 연동 옵션 필수
 # apptainer는 singularity와 명령어 이름만 다르고 옵션 및 이미지가 상호 호환이 됨
 
 $ salloc --partition=normal --comment="field=misc;appl=pytorch" --nodes=1 --gpus-per-node=4 \
@@ -711,7 +713,7 @@ $ export PROGRAM="/apps/common/kisti-container/examples/02-gpu-smoke/gpu_smoke.p
 $ module load apptainer/1.4.5
 $ apptainer exec --nv "$IMAGE" python3 "$PROGRAM"
 GPU_SMOKE_PASS host=node0001 gpu=NVIDIA GH200 120GB shape=(2048, 2048) mean=0.039116
-```
+</code></pre>
 
 {% hint style="info" %}
 &#x20;**Apptainer 참고 자료**
@@ -773,7 +775,7 @@ Apptainer, Enroot에서 kisti-container는  Slurm task 안에서 실행되는 Wr
 #!/bin/bash
 #SBATCH --job-name=kc-gpu-sing
 #SBATCH --partition=normal
-#SBATCH --comment="misc;appl=pytorch"
+#SBATCH --comment="field=misc;appl=pytorch"
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --exclusive
@@ -797,7 +799,7 @@ srun --mpi=none \
 
 Pyxis에서 kisti-container는 srun 명령을 생성하는 프론트엔드입니다. 배치 작업 스크립트에서 직접 호출합니다.  예제와 같이 작업 스크립트 파일을 작성하고 "sbatch \[작업  스크립트 파일명]" 명령어를 사용하여 배치작업을 제출합니다. &#x20;
 
-Pyxis에서 다음 형식은 사용하지 않습니다. 이 형식은 이미 생성된 Slurm step 안에서 Pyxis용 새 `srun`을 만들려고 하므로 Wrapper가 **오류**로 **중단**합니다.
+Pyxis에서 다음 형식은 사용하지 않습니다. 이 형식은 이미 생성된 Slurm step 안에서 Pyxis용 새 `srun`을 만들려고 하므로 Wrapper가 오류로 중단됩니다.
 
 ```bash
 srun kisti-container --runtime pyxis ...
@@ -809,7 +811,7 @@ srun kisti-container --runtime pyxis ...
 #!/bin/bash
 #SBATCH --job-name=kc-gpu-pyxis
 #SBATCH --partition=normal
-#SBATCH --comment="misc;appl=pytorch"
+#SBATCH --comment="field=misc;appl=pytorch"
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --exclusive
@@ -836,13 +838,13 @@ module load enroot/4.2.0
 
 **a. 배치 스크립트 예제**
 
-{% code title="## 다중 노드 통신 환경 점검 배치 스크립트 에제 : kc-node-doctor.sbatch" %}
+{% code title="## 다중 노드 통신 환경 점검 배치 스크립트 예제 : kc-node-doctor.sbatch" %}
 ```bash
 
 #!/bin/bash
 #SBATCH --job-name=kc-node-doctor
 #SBATCH --partition=normal
-#SBATCH --comment="misc;appl=pytorch"
+#SBATCH --comment="field=misc;appl=pytorch"
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
@@ -920,7 +922,7 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 **컨테이너  런타임** 또는 **kisti-container**를 함께 사용하는 Slurm 작업  스크립트를 작성 및 제출하여 계산노드에서 사용자 작업을 실행할 수 있습니다. 아래와 같이 관심 있는 작업 유형의 **예제 디렉터리**와 예제 실행에 필요한 **이미지 파일**을 사용자 작업 공간으로 복사하여 실행해 볼 수 있습니다.
 
 <pre class="language-bash" data-title="예제 디렉터리"><code class="lang-bash"><strong>$ ls -l /apps/common/kisti-container/examples
-</strong>01-cpu-smoke  
+</strong>01-cpu-smoke  : AMD CPU 
 02-gpu-smoke  
 03-mpi-omb  
 04-pytorch-ddp  
@@ -940,16 +942,13 @@ grep -hiE 'PASS|FAIL|NCCL|Libfabric|CXI|Traceback|ERROR' \
 ```bash
 # 예제 디렉터리
 $ mkdir -p /scratch/$USER/kisti-container/examples
-
-$ cp -a /apps/common/kisti-container/examples/04-pytorch-ddp \
+$ cp -rf /apps/common/kisti-container/examples/* \
   /scratch/$USER/kisti-container/examples/
 
 # 이미지 파일
-$ mkdir -p /scratch/$USER/kisti-container/images
-cp -a /apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sif \
-  /scratch/$USER/kisti-container/images/
-cp -a /apps/common/kisti-container/images/pytorch-25.03-py3-aarch64.sqsh \
-  /scratch/$USER/kisti-container/images/
+$ mkdir -p /scratch/$USER/kisti-container/images 
+$ cp -rf /apps/common/kisti-container/images/* \
+  /scratch/$USER/kisti-container/images
 ```
 {% endcode %}
 
