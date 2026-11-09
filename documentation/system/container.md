@@ -32,7 +32,7 @@ layout:
 
 **Podman**은 OCI 이미지를 빌드하고 관리하는 도구이고, 계산  작업을 실행하기 위해서는 **Enroot 또는 Apptainer** 와 같은 컨테이너 런타임을 선택적으로 사용할 수 있습니다.
 
-또한, 병렬 연산 및 분산  학습 작업에서 고성능 네트워크(Slingshot) 기반의 MPI 및 NCCL 환경 구성을 지원하는 컨테이너 런타임 Wrapper 프로그램(**kisti-container**)을 제공하고 있습니다.   &#x20;
+또한, 병렬 연산 및 분산  학습 작업에서 고성능 네트워크(Slingshot) 기반의 MPI 및 NCCL 환경 구성을 지원하는 컨테이너 런타임 Wrapper(**kisti-container**)을 제공하고 있습니다.   &#x20;
 
 
 
