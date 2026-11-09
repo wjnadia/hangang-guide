@@ -134,14 +134,17 @@ configure 파일: `configure_gnu_gpu_base`
 ```bash
 #!/bin/bash
 module purge
-export LOADEDMODULES=""
 module load PrgEnv-gnu
 module load craype-arm-grace
-module load craype-accel-nvidia90
 module load cudatoolkit/25.3_12.8
-module load cray-mpich/9.0.1
-module load cmake/4.2.3
+module swap cray-mpich cray-mpich/9.0.1
+module load cmake/4.4.3
 
+export CRAY_ACCEL_TARGET=nvidia90
+export CRAY_ACCEL_VENDOR=nvidia
+export CRAYPE_LINK_TYPE=dynamic
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+ 
 export CC=cc
 export CXX=CC
 export FC=ftn
