@@ -335,7 +335,8 @@ $ module load craype-arm-grace
 $ module swap nvidia/26.3 nvidia/25.3
 $ module swap cray-mpich/9.1.0 cray-mpich/9.0.1  #Cuda 12.x는 cray-mpich/9.0.1과 호환
 $ module load cuda/12.8
-$ module load cray-pmi
+$ module swap cray-libsci cray-libsci/25.09.0
+$ module load cray-pmi/6.1.16
 $ module load craype-accel-nvidia90
 export LD_LIBRARY_PATH=/opt/cray/pe/mpich/9.0.1/gtl/lib/:$LD_LIBRARY_PATH
 ```
@@ -348,7 +349,8 @@ $ module load PrgEnv-nvidia
 $ module load craype-arm-grace
 $ module load cuda/12.9_26.3
 $ module swap cray-mpich/9.1.0 cray-mpich/9.0.1  #Cuda 12.x는 cray-mpich/9.0.1과 호환
-$ module load cray-pmi
+$ module swap cray-libsci cray-libsci/25.09.0
+$ module load cray-pmi/6.1.16
 $ module load craype-accel-nvidia90
 export LD_LIBRARY_PATH=/opt/cray/pe/mpich/9.0.1/gtl/lib/:$LD_LIBRARY_PATH
 ```
@@ -516,7 +518,8 @@ $ module load PrgEnv-nvidia
 $ module load craype-arm-grace
 $ module load cuda/12.9_26.3
 $ module swap cray-mpich/9.1.0 cray-mpich/9.0.1  #Cuda 12.x는 cray-mpich/9.0.1과 호환
-$ module load cray-pmi
+$ module swap cray-libsci cray-libsci/25.09.0
+$ module load cray-pmi/6.1.16
 $ module load craype-accel-nvidia90
 export LD_LIBRARY_PATH=/opt/cray/pe/mpich/9.0.1/gtl/lib/:$LD_LIBRARY_PATH
 ```
