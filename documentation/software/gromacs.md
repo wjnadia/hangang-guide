@@ -137,14 +137,16 @@ module purge
 module load PrgEnv-gnu
 module load craype-arm-grace
 module load cudatoolkit/25.3_12.8
-module swap cray-mpich cray-mpich/9.0.1
-module load cmake/4.4.3
+module swap cray-mpich cray-mpich/9.0.1          
+module unload cray-libsci                                     
+module load cmake/4.2.3
 
+# craype-accel-nvidia90 모듈 대신 직접 설정
 export CRAY_ACCEL_TARGET=nvidia90
 export CRAY_ACCEL_VENDOR=nvidia
 export CRAYPE_LINK_TYPE=dynamic
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
- 
+
 export CC=cc
 export CXX=CC
 export FC=ftn
@@ -282,13 +284,16 @@ grep -E "Performance:" md_${TAG}_${SLURM_JOB_ID}.log
 #SBATCH --comment="field=mse;appl=gromacs"
 
 # 실행 시 변경 가능한 변수
-BUILD=${BUILD:-gnu_base}     # gnu_base | gnu_opt | ...
+BUILD=${BUILD:-gnu_base}         # gnu_base | gnu_opt | ...
 NSTEPS=${NSTEPS:-500000}
-EXTRA=${EXTRA:-}             # 추가 mdrun 옵션 (예: "-nstlist 300")
+EXTRA=${EXTRA:-}                      # 추가 mdrun 옵션 (예: "-nstlist 300")
 
 module purge
-module load PrgEnv-gnu craype-arm-grace craype-accel-nvidia90
-module load cudatoolkit/25.3_12.8 cray-mpich/9.0.1
+module load PrgEnv-gnu craype-arm-grace cudatoolkit/25.3_12.8      
+module swap cray-mpich cray-mpich/9.0.1                            
+module unload cray-libsci                                           
+export CRAY_ACCEL_TARGET=nvidia90                                   
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}  
 
 GMX=$HOME/GROMACS_GPU/bin/${BUILD}/bin/gmx_mpi
 TPR=$HOME/GROMACS_heterogeneous_parallelization_benchmark_info_and_systems_JCP/stmv/topol.tpr
@@ -301,10 +306,10 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 export GMX_FORCE_GPU_AWARE_MPI=1
 export GMX_ENABLE_DIRECT_GPU_COMM=1
 
-# 다중 rank: PME 전용 rank 1개 + 동적 로드밸런싱
+# 다중 rank: PME 전용 rank 1개
 NRANKS=${SLURM_NTASKS}
 MULTI=""
-[ ${NRANKS} -gt 1 ] && MULTI="-npme 1 -dlb yes"
+[ ${NRANKS} -gt 1 ] && MULTI="-npme 1"                              
 
 LOG=md_${BUILD}_N${SLURM_NNODES}_G${NRANKS}_${SLURM_JOB_ID}.log
 
