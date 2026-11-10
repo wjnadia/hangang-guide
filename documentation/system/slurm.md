@@ -122,3 +122,55 @@ srun -N 4 -n 64 ./my_mpi_code    # You should use srun instead of mpirun!
 {% endtab %}
 {% endtabs %}
 
+## 마. 인터랙티브 작업 수행
+
+{% tabs %}
+{% tab title="1. GPU노드" %}
+#### 1) 기본 형식
+
+```
+salloc -p [파티션 정보] -N [노드 수] --exclusive -t [HH:MM:SS] --comment="field=[분야];appl=[응용프로그램]" -J [작업 이름]
+```
+
+#### 2) 사용예: GPU노드 1개, GPU 1장
+
+```
+salloc -p [GPU 파티션] -N 1 --gres=gpu:1 -t 01:00:00 --comment="field=[분야];appl=[응용프로그램]" -J interactive_gpu
+```
+{% endtab %}
+
+{% tab title="2. CPU노드" %}
+#### 1) 기본 형식
+
+```
+salloc -p [파티션 정보] -N [노드 수] --exclusive -t [HH:MM:SS] \       --comment="field=[분야];appl=[응용프로그램]" -J [작업 이름]
+```
+
+#### 2)  사용예: **CPU 노드 1개, 2시간 독점 사용**
+
+```
+salloc -p [CPU 파티션] -N 1 --exclusive -t 02:00:00 \       --comment="field=misc;appl=misc" -J interactive_cpu
+```
+{% endtab %}
+{% endtabs %}
+
+
+
+## 바. sbatch 옵션 설명
+
+| 옵션                      | 설명                            | 예시                                 |
+| ----------------------- | ----------------------------- | ---------------------------------- |
+| `-p`, `--partition`     | 사용할 파티션                       | `-p [파티션 정보]`                      |
+| `-N`, `--nodes`         | 할당받을 노드 수                     | `-N 2`                             |
+| `-n`, `--ntasks`        | 전체 MPI 프로세스(task) 수           | `-n 144`                           |
+| `--ntasks-per-node`     | 노드당 task 수                    | `--ntasks-per-node=72`             |
+| `-c`, `--cpus-per-task` | task당 CPU 코어 수 (OpenMP 스레드용)  | `-c 4`                             |
+| `--mem`                 | 노드당 메모리                       | `--mem=100G`                       |
+| `--exclusive`           | 노드를 다른 작업과 공유하지 않고 독점 사용      | `--exclusive`                      |
+| `-t`, `--time`          | 최대 사용 시간 (파티션 최대값 이하)         | `-t 02:00:00`                      |
+| `-J`, `--job-name`      | 작업 이름 (`squeue`에 표시됨)         | `-J interactive_cpu`               |
+| `--comment`             | 분야/응용 정보 (**필수**)             | `--comment="field=misc;appl=misc"` |
+| `--gres=gpu:[N]`        | 노드당 GPU 수 (GPU 파티션)           | `--gres=gpu:4`                     |
+| `--gpus-per-node`       | 노드당 GPU 수 (`--gres` 대신 사용 가능) | `--gpus-per-node=4`                |
+| `-w`, `--nodelist`      | 특정 노드 지정                      | `-w [노드명]`                         |
+| `-x`, `--exclude`       | 특정 노드 제외                      | `-x [노드명]`                         |
