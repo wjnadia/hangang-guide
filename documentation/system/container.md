@@ -283,12 +283,12 @@ Slingshot 고속 네트워크를 지원하는 Pytorch/NeMo 이미지를 다음 �
 
 
 
-## 라. 이미지 빌드 (Podman)
+## 라. 이미지 빌드&#x20;
 
-작업을 실행 할 계산노드의 아키텍처에 따라 CPU 또는 GPU 로그인 노드에서 **Podman**을 사용하여 컨테이너 이미지를 빌드합니다.&#x20;
+작업을 실행 할 계산노드의 아키텍처에 따라 CPU 또는 GPU 로그인 노드에서 **Podman**을 사용하여 컨테이너 이미지를 빌드합니다. 필요에 따라 Enroot 또는 Apptainer 실행용 이미지 파일로 변환하여 사용합니다.     &#x20;
 
 {% hint style="info" %}
-**apptainer 컨테이너 이미지**를 직접 빌드 하기 위해서는 뉴론 컨테이너 활용 가이드의  [**가. 컨테이너 이미지 빌드하기**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container#id) 를 참조하시기 바랍니다.&#x20;
+**apptainer 컨테이너 이미지**를 직접 빌드 하기 위해서는 뉴론 컨테이너 활용 가이드의  [**가. 컨테이너 이미지 빌드하기**](https://docs-ksc.gitbook.io/neuron-user-guide/appendix/appendix-3-how-to-use-singularity-container#id) 를 참조하시기 바랍니다.  apptainer는 singularity와 명령어만 다르고&#x20;
 {% endhint %}
 
 ### 1. Podman 사용 설정
