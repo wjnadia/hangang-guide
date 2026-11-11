@@ -136,16 +136,13 @@ configure 파일: `configure_gnu_gpu_base`
 module purge
 module load PrgEnv-gnu
 module load craype-arm-grace
-module load cudatoolkit/25.3_12.8
-module swap cray-mpich cray-mpich/9.0.1          
-module unload cray-libsci                                     
-module load cmake/4.2.3
-
-# craype-accel-nvidia90 모듈 대신 직접 설정
-export CRAY_ACCEL_TARGET=nvidia90
-export CRAY_ACCEL_VENDOR=nvidia
-export CRAYPE_LINK_TYPE=dynamic
-export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+module swap cray-mpich/9.1.0 cray-mpich/9.0.1   # Cuda 12.x는 cray-mpich/9.0.1과 호환
+module load cuda/12.8
+module swap cray-libsci cray-libsci/25.09.0
+module load cray-pmi/6.1.16
+module load craype-accel-nvidia90
+module load cmake/4.4.3
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}   # 9.0.1 MPI/GTL 우선
 
 export CC=cc
 export CXX=CC
@@ -174,9 +171,21 @@ cmake .. \
 빌드 및 설치
 
 ```bash
+module purge
+module load PrgEnv-gnu
+module load craype-arm-grace
+module swap cray-mpich/9.1.0 cray-mpich/9.0.1
+module load cuda/12.8
+module swap cray-libsci cray-libsci/25.09.0
+module load cray-pmi/6.1.16
+module load craype-accel-nvidia90
+module load cmake/4.4.3
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+export CC=cc CXX=CC FC=ftn
+
 mkdir build_gnu_gpu_base && cd build_gnu_gpu_base
 ../configure_gnu_gpu_base 2>&1 | tee config.log
-make -j32 2>&1 | tee make.log && make install
+make -j32 2>&1 | tee make.log && make instal
 ```
 
 ### 2. 설치 확인
@@ -184,8 +193,7 @@ make -j32 2>&1 | tee make.log && make install
 설치가 끝나면 `<INSTALL_PREFIX>/bin` 아래에 실행 파일 `gmx_mpi`와 환경 설정 스크립트 `GMXRC`가 생성됩니다. (예: CPU-AMD)
 
 ```bash
-$ ls ~/GROMACS_CPU/bin/cray_base/bin/
-total 292
+ls $HOME/GROMACS_GPU/bin/gnu_base/bin
 ./ ../ demux.pl gmx-completion.bash gmx-completion-gmx_mpi.bash gmx_mpi GMXRC GMXRC.bash GMXRC.csh GMXRC.zsh xplor2gmx.pl
 ```
 
@@ -268,10 +276,10 @@ grep -E "Performance:" md_${TAG}_${SLURM_JOB_ID}.log
 ```bash
 #!/bin/bash
 ##########################################
-# GROMACS 2025.4 BMT - Hangang GH200, STMV (1,066,628 atoms)
-# Full GPU offloading, 1 rank * 72 OpenMP threads  (1 rank = 1 GPU)
+# GROMACS 2026.4 - Hangang GH200 GPU 실행 예제 (STMV)
+# 1 rank = 1 GPU, rank당 72 OpenMP threads
 ##########################################
-#SBATCH -J GMX_STMV_GPU
+#SBATCH -J GMX_GPU
 #SBATCH -p normal
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
@@ -283,49 +291,37 @@ grep -E "Performance:" md_${TAG}_${SLURM_JOB_ID}.log
 #SBATCH --time=01:00:00
 #SBATCH --comment="field=mse;appl=gromacs"
 
-# 실행 시 변경 가능한 변수
-BUILD=${BUILD:-gnu_base}         # gnu_base | gnu_opt | ...
-NSTEPS=${NSTEPS:-500000}
-EXTRA=${EXTRA:-}                      # 추가 mdrun 옵션 (예: "-nstlist 300")
-
+# ---- 모듈 (빌드와 동일) ----
 module purge
-module load PrgEnv-gnu craype-arm-grace cudatoolkit/25.3_12.8      
-module swap cray-mpich cray-mpich/9.0.1                            
-module unload cray-libsci                                           
-export CRAY_ACCEL_TARGET=nvidia90                                   
-export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}  
+module load PrgEnv-gnu
+module load craype-arm-grace
+module swap cray-mpich/9.1.0 cray-mpich/9.0.1   # Cuda 12.x는 cray-mpich/9.0.1과 호환
+module load cuda/12.8
+module swap cray-libsci cray-libsci/25.09.0
+module load cray-pmi/6.1.16
+module load craype-accel-nvidia90               # 반드시 cuda 모듈 다음
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
 
-GMX=$HOME/GROMACS_GPU/bin/${BUILD}/bin/gmx_mpi
+# ---- 실행 파일 및 입력 ----
+GMX=$HOME/GROMACS_GPU/bin/gnu_base/bin/gmx_mpi
 TPR=$HOME/GROMACS_heterogeneous_parallelization_benchmark_info_and_systems_JCP/stmv/topol.tpr
 
+# ---- 실행 환경 ----
 ulimit -s unlimited
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-export GMX_MAXBACKUP=-1
-# Direct GPU communication
-export MPICH_GPU_SUPPORT_ENABLED=1
+export MPICH_GPU_SUPPORT_ENABLED=1      # GPU 직접 통신
 export GMX_FORCE_GPU_AWARE_MPI=1
 export GMX_ENABLE_DIRECT_GPU_COMM=1
 
-# 다중 rank: PME 전용 rank 1개
-NRANKS=${SLURM_NTASKS}
-MULTI=""
-[ ${NRANKS} -gt 1 ] && MULTI="-npme 1"                              
-
-LOG=md_${BUILD}_N${SLURM_NNODES}_G${NRANKS}_${SLURM_JOB_ID}.log
-
 cd ${SLURM_SUBMIT_DIR}
-echo "BUILD=${BUILD} NODES=${SLURM_NNODES} RANKS=${NRANKS} OMP=${OMP_NUM_THREADS} NSTEPS=${NSTEPS} EXTRA=${EXTRA}"
 
-# 바인딩은 GROMACS(-pin on)가 담당 → srun은 바인딩하지 않음
-# Full GPU offloading, PME 튜닝 ON (-notunepme 없음)
 srun --cpu-bind=none \
-  ${GMX} mdrun -s ${TPR} -g ${LOG} \
-    -nb gpu -pme gpu -bonded gpu -update gpu ${MULTI} \
+  ${GMX} mdrun -s ${TPR} -deffnm md \
+    -nb gpu -pme gpu -bonded gpu -update gpu -npme 1 \
     -ntomp ${OMP_NUM_THREADS} -pin on \
-    -resethway -nsteps ${NSTEPS} -noconfout -cpt -1 -v ${EXTRA}
+    -nsteps 50000 -v
 
-grep "Performance:" ${LOG}
-grep -iE "optimal|cut-off.*grid" ${LOG} | tail -3     # PME 튜닝 최종 결과
+grep "Performance:" md.log
 ```
 
 ### 4. 결과 확인
