@@ -365,7 +365,7 @@ $ module swap nvidia/26.3 nvidia/26.5
 $ module load cuda/13.2_26.5
 $ module load cray-pmi
 $ module load craype-accel-nvidia90
-export LD_LIBRARY_PATH=$CUDA_HOME/compat/lib:$LD_LIBRARY_PATH  #cuda 13.x 호환 라이브러리 로드
+export LD_LIBRARY_PATH=$CUDA_HOME/compat:$LD_LIBRARY_PATH  #cuda 13.x 호환 라이브러리 로드
 ```
 {% endtab %}
 
