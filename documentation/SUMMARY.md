@@ -9,7 +9,6 @@
   * [컨테이너](system/container.md)
   * [DTN(데이터전송노드)](system/dtn.md)
   * [사용자 지원](system/user-support.md)
-  * [컨테이너(old)](system/container-1.md)
 * [소프트웨어](software/README.md)
   * [AI 프레임워크](software/ai.md)
   * [PyTorch](software/pytorch.md)
