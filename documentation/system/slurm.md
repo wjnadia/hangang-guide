@@ -80,6 +80,11 @@ module swap nvidia/26.5           # for nvidia 26.5 instead of default version
 module load cuda/13.2_26.5        # for cuda v13.2
 module load craype-accel-nvidia90
 
+# Environment variable for cray-mpich & libfablic
+export FI_CXI_DISABLE_HOST_REGISTER=1
+export FI_MR_CACHE_MONITOR=kdreg2
+export FI_CXI_RX_MATCH_MODE=hybrid
+
 srun -N 2 -n 8 ./my_gpu_code      # You should use srun instead of mpirun!
 ```
 
@@ -109,6 +114,9 @@ module purge
 module load craype-x86-turin
 module load PrgEnv-gnu
 
+# Environment variable for cray-mpich & libfablic
+export FI_CXI_RX_MATCH_MODE=hybrid
+
 srun -N 4 -n 64 ./my_mpi_code    # You should use srun instead of mpirun!
 ```
 
@@ -135,7 +143,7 @@ salloc -p [파티션 정보] -N [노드 수] --exclusive -t [HH:MM:SS] --comment
 #### 2) 사용예: GPU노드 1개, GPU 1장
 
 ```
-salloc -p [GPU 파티션] -N 1 --gres=gpu:1 -t 01:00:00 --comment="field=[분야];appl=[응용프로그램]" -J interactive_gpu
+salloc -p normal -N 1 --gres=gpu:1 -t 01:00:00 --comment="field=misc;appl=misc" -J interactive_gpu
 ```
 {% endtab %}
 
@@ -143,13 +151,13 @@ salloc -p [GPU 파티션] -N 1 --gres=gpu:1 -t 01:00:00 --comment="field=[분야
 #### 1) 기본 형식
 
 ```
-salloc -p [파티션 정보] -N [노드 수] --exclusive -t [HH:MM:SS] \       --comment="field=[분야];appl=[응용프로그램]" -J [작업 이름]
+salloc -p [파티션 정보] -N [노드 수] --exclusive -t [HH:MM:SS] --comment="field=[분야];appl=[응용프로그램]" -J [작업 이름]
 ```
 
 #### 2)  사용예: **CPU 노드 1개, 2시간 독점 사용**
 
 ```
-salloc -p [CPU 파티션] -N 1 --exclusive -t 02:00:00 \       --comment="field=misc;appl=misc" -J interactive_cpu
+salloc -p normal_cpu -N 1 --exclusive -t 02:00:00 --comment="field=misc;appl=misc" -J interactive_cpu
 ```
 {% endtab %}
 {% endtabs %}
