@@ -261,9 +261,9 @@ $ isam
 * 사용자의 현재 사용량은 아래 명령어로 확인이 가능합니다.
 
 ```
-$ lfs quota -uh $uid /home01
-$ lfs quota -gh $gid /scratch
-$ lfs quota -gh $gid /appsdata
+$ lfs quota -uh $UID /home01
+$ lfs quota -gh $GROUPS /scratch
+$ lfs quota -gh $GROUPS /appsdata
 ```
 
 * 파일 삭제 정책은 파일 속성 중 atime을 기준으로 적용됩니다.
