@@ -165,6 +165,10 @@ DeepSpeed는 JSON 설정 파일을 통해 ZeRO 단계와 학습 관련 옵션 �
 
 제공된 배치 스크립트에서 사용하는 `ds_config.json` 파일의 위치와 설정을 확인하고, 필요한 경우 연구 목적에 맞게 수정해야 합니다.
 
+{% hint style="warning" %}
+DeepSpeed 0.19.9 미만 버전에서는 `ds_config.json`에 `comms_logger` 항목이 있으면 `"enabled": false`여도 통신 기록이 켜져 에폭마다 실행 시간이 늘어납니다. 통신 기록이 필요하지 않다면 해당 항목을 삭제하고 사용하시기 바랍니다.
+{% endhint %}
+
 예제의 컨테이너 이미지, 학습 프로그램 및 Slurm 설정을 확인한 후 다음과 같이 제출합니다.
 
 ```bash
