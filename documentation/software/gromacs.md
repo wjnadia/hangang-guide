@@ -185,7 +185,7 @@ export CC=cc CXX=CC FC=ftn
 
 mkdir build_gnu_gpu_base && cd build_gnu_gpu_base
 ../configure_gnu_gpu_base 2>&1 | tee config.log
-make -j32 2>&1 | tee make.log && make instal
+make -j32 2>&1 | tee make.log && make install
 ```
 
 ### 2. 설치 확인
