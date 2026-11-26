@@ -190,7 +190,7 @@ make -j32 2>&1 | tee make.log && make install
 
 ### 2. 설치 확인
 
-설치가 끝나면 `<INSTALL_PREFIX>/bin` 아래에 실행 파일 `gmx_mpi`와 환경 설정 스크립트 `GMXRC`가 생성됩니다. (예: CPU-AMD)
+설치가 끝나면 `<INSTALL_PREFIX>/bin` 아래에 실행 파일 `gmx_mpi`와 환경 설정 스크립트 `GMXRC`가 생성됩니다.
 
 ```bash
 ls $HOME/GROMACS_GPU/bin/gnu_base/bin
